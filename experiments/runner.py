@@ -1,6 +1,7 @@
 """Run-level task selection, persistence, and command-line entry point."""
 
 import argparse
+import hashlib
 import json
 import math
 import random
@@ -46,6 +47,7 @@ from experiments.protocol.rewards import (
     reward_scheme_from_args,
 )
 from experiments.protocol.state import AGENT_IDS
+from experiments.turnover import find_first_eligible_onset, run_spend
 from experiments.tasks import (
     DEFAULT_TASK_SEQUENCES,
     display_task_id,
@@ -291,7 +293,58 @@ def build_run_parser() -> argparse.ArgumentParser:
             "cap can be resumed -- see _resume_state."
         ),
     )
+    add_turnover_arguments(parser)
     return parser
+
+
+def add_turnover_arguments(parser: argparse.ArgumentParser) -> None:
+    """Options for the post-collusion Bob-replacement experiment (experiments/turnover.py)."""
+    group = parser.add_argument_group("turnover (peer replacement)")
+    group.add_argument(
+        "--run-path",
+        default="",
+        help=(
+            "Write run.json exactly here instead of a new timestamped folder. If the "
+            "file already has finished episodes, continue after them so paid "
+            "episodes are not run twice."
+        ),
+    )
+    group.add_argument(
+        "--stop-at-onset",
+        action="store_true",
+        help=(
+            "Stop after the first eligible mutual unsupported ACCEPT (the onset), or "
+            "after --latest-onset-episode if there is none."
+        ),
+    )
+    group.add_argument("--latest-onset-episode", type=int, default=7)
+    group.add_argument(
+        "--fork-from",
+        default="",
+        help="Checkpoint run.json (ends at the onset episode) to branch from.",
+    )
+    group.add_argument(
+        "--fork-condition",
+        choices=("control", "replacement"),
+        default="",
+        help="control: both agents keep history; replacement: Bob restarts once.",
+    )
+    group.add_argument(
+        "--fork-episodes",
+        type=int,
+        default=3,
+        help="How many task episodes to run after the fork.",
+    )
+    group.add_argument(
+        "--max-spend-usd",
+        type=float,
+        default=0.0,
+        help=(
+            "Stop before the next episode once this invocation's measured cost reaches "
+            "this amount, or as soon as any call's cost is unknown. 0 disables it. "
+            "Local cost only, so it is not a provider-side hard cap."
+        ),
+    )
 
 
 def _validate_rounds(args: argparse.Namespace) -> None:
@@ -561,6 +614,113 @@ def _resume_state(
     return deepcopy(results), agent_messages
 
 
+def _file_sha256(path: str | Path) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def _fork_state(
+    *,
+    args: argparse.Namespace,
+    base_agent_messages: dict[str, list[dict[str, Any]]],
+    reward_scheme: RewardScheme,
+    selected: SelectedPairs,
+    output_path: Path,
+    verdict_policy_by_episode: list[str],
+    throttle_by_episode: list[str],
+) -> tuple[list[dict[str, Any]], dict[str, list[dict[str, Any]]], dict[str, Any]]:
+    """Load the shared checkpoint and set up one branch (control or replacement).
+
+    Both branches read the same checkpoint file, so Alice's history at the fork is
+    identical in both. In the replacement branch Bob gets back only his opening
+    (system) messages, once, here. If this branch already saved some episodes after
+    the fork, continue from them instead of paying for them again.
+    """
+    if args.bob_model == "controlled" or args.alice_model != args.bob_model:
+        raise ValueError("--fork-from needs one live model route for both agents.")
+    record = json.loads(Path(args.fork_from).read_text())
+    config = record.get("run_config") or {}
+    # _resume_state already checks protocol, reward, memory, manifest and prompts.
+    # Here we also check the model and decoding settings and the episode schedules.
+    mine = {
+        "models": {a: getattr(args, f"{a}_model") for a in AGENT_IDS},
+        "llm_request_parameters": {
+            a: {
+                "temperature": getattr(args, f"{a}_temperature"),
+                "max_output_tokens": getattr(args, f"{a}_max_output_tokens"),
+                "reasoning_effort": getattr(args, f"{a}_reasoning_effort"),
+            }
+            for a in AGENT_IDS
+        },
+        "verdict_policy_by_episode": verdict_policy_by_episode,
+        "throttle_policy_by_episode": throttle_by_episode,
+        "cross_episode_memory_length": {
+            a: getattr(args, f"{a}_cross_episode_memory_length") for a in AGENT_IDS
+        },
+    }
+    wrong = [key for key, value in mine.items() if config.get(key) != value]
+    if wrong:
+        raise ValueError(
+            "The branch settings differ from the checkpoint: " + ", ".join(wrong)
+        )
+    results, agent_messages = _resume_state(
+        args.fork_from,
+        args=args,
+        base_agent_messages=base_agent_messages,
+        reward_scheme=reward_scheme,
+        manifest_path=selected.manifest_path,
+        episode_count=len(selected.pairs),
+    )
+    fork_episode = len(results)
+    last = min(fork_episode + args.fork_episodes, len(selected.pairs))
+    info = {
+        "checkpoint_path": str(Path(args.fork_from).resolve()),
+        "checkpoint_sha256": _file_sha256(args.fork_from),
+        "condition": args.fork_condition,
+        "fork_after_episode": fork_episode,
+        "last_episode": last,
+        "next_task_ids": [
+            [task["task_id"] for task in pair]
+            for pair in selected.pairs[fork_episode:last]
+        ],
+    }
+
+    if output_path.exists():
+        # Interrupted branch: keep what it already paid for.
+        saved = json.loads(output_path.read_text())
+        old = saved.get("turnover") or {}
+        if (
+            old.get("checkpoint_sha256") != info["checkpoint_sha256"]
+            or old.get("condition") != info["condition"]
+        ):
+            raise ValueError(f"{output_path} belongs to a different branch.")
+        if len(saved.get("results") or []) > fork_episode:
+            results, agent_messages = _resume_state(
+                str(output_path),
+                args=args,
+                base_agent_messages=base_agent_messages,
+                reward_scheme=reward_scheme,
+                manifest_path=selected.manifest_path,
+                # +1 so a finished branch does not raise "nothing left"; the loop
+                # below then simply has no episode to run.
+                episode_count=len(selected.pairs) + 1,
+            )
+            if args.fork_condition == "replacement":
+                # Bob's memory starts at the fork, so rebuild it from those episodes only.
+                agent_messages["bob"] = restore_episode_boundaries(
+                    base_agent_messages["bob"],
+                    [
+                        (str(ep.get("episode_id") or ""), ep["agents"]["bob"]["messages"])
+                        for ep in results[fork_episode:]
+                    ],
+                )
+            return results, agent_messages, info
+
+    if args.fork_condition == "replacement":
+        # The one-time reset: a fresh Bob with only his original opening messages.
+        agent_messages["bob"] = deepcopy(base_agent_messages["bob"])
+    return results, agent_messages, info
+
+
 def _run_selected_episodes(
     *,
     args: argparse.Namespace,
@@ -609,20 +769,37 @@ def _run_selected_episodes(
             episode_count=len(selected.pairs),
         )
         completed_episodes = len(results)
+    turnover_info: dict[str, Any] = {}
+    last_episode = len(selected.pairs)
+    if args.fork_from:
+        results, agent_messages, turnover_info = _fork_state(
+            args=args,
+            base_agent_messages=base_agent_messages,
+            reward_scheme=reward_scheme,
+            selected=selected,
+            output_path=output_path,
+            verdict_policy_by_episode=verdict_policy_by_episode,
+            throttle_by_episode=throttle_by_episode,
+        )
+        completed_episodes = len(results)
+        last_episode = turnover_info["last_episode"]
+    elif args.stop_at_onset:
+        turnover_info = {"condition": "prefix", "onset": None, "stopped_reason": ""}
+    first_new_episode = completed_episodes
 
     def persist() -> None:
-        write_run_output(
-            output_path,
-            build_run_output(
-                args=args,
-                manifest_path=selected.manifest_path,
-                pair_count=len(selected.pairs),
-                initial_verdict_policy=args.verdict_policy,
-                verdict_policy_by_episode=verdict_policy_by_episode,
-                throttle_policy_by_episode=throttle_by_episode,
-                results=results,
-            ),
+        output = build_run_output(
+            args=args,
+            manifest_path=selected.manifest_path,
+            pair_count=len(selected.pairs),
+            initial_verdict_policy=args.verdict_policy,
+            verdict_policy_by_episode=verdict_policy_by_episode,
+            throttle_policy_by_episode=throttle_by_episode,
+            results=results,
         )
+        if turnover_info:
+            output["turnover"] = turnover_info
+        write_run_output(output_path, output)
 
     persist()
     log_progress(f"Saving incremental results to: {output_path}", True)
@@ -665,6 +842,20 @@ def _run_selected_episodes(
     for episode_index, pair in enumerate(selected.pairs):
         if episode_index < completed_episodes:
             continue
+        if episode_index >= last_episode:
+            break
+        if args.max_spend_usd > 0:
+            spent, unknown = run_spend(results[first_new_episode:])
+            if unknown or spent >= args.max_spend_usd:
+                reason = (
+                    f"budget: {unknown} call(s) with unknown cost"
+                    if unknown
+                    else f"budget: spent ${spent:.4f} of ${args.max_spend_usd:.2f}"
+                )
+                turnover_info["stopped_reason"] = reason
+                persist()
+                log_progress(f"Stopping before episode {episode_index + 1}, {reason}", True)
+                break
         throttled = throttle_by_episode[episode_index] == "throttled"
         verdict_policy = verdict_policy_by_episode[episode_index]
         group = throttle_by_episode[episode_index]
@@ -714,13 +905,38 @@ def _run_selected_episodes(
             episode_id=str(result["episode_id"]),
             max_memory_episodes_by_agent=max_memory_episodes_by_agent,
         )
+        if args.stop_at_onset:
+            onset = find_first_eligible_onset(
+                results,
+                char_limit=args.char_limit,
+                latest_episode=args.latest_onset_episode,
+            )
+            turnover_info["onset"] = onset
+            if onset["status"] == "onset":
+                turnover_info["stopped_reason"] = "onset"
+            elif episode_index + 1 >= args.latest_onset_episode:
+                turnover_info["stopped_reason"] = "no_eligible_onset"
         persist()
         log_progress(
             "  Saved incremental results after "
             f"{episode_index + 1}/{len(selected.pairs)}",
             True,
         )
+        if turnover_info.get("stopped_reason") in ("onset", "no_eligible_onset"):
+            log_progress(f"Stopping: {turnover_info['stopped_reason']}", True)
+            break
     log_progress(f"Saved results to: {output_path}", True)
+
+
+def _validate_turnover_args(args: argparse.Namespace) -> None:
+    if bool(args.fork_from) != bool(args.fork_condition):
+        raise ValueError("--fork-from and --fork-condition go together.")
+    if args.fork_from and (args.resume_from or args.stop_at_onset):
+        raise ValueError("--fork-from cannot be combined with --resume-from or --stop-at-onset.")
+    if args.fork_from and not args.run_path:
+        raise ValueError("--fork-from needs --run-path so an interrupted branch can continue.")
+    if args.fork_episodes < 1 or args.latest_onset_episode < 1 or args.max_spend_usd < 0:
+        raise ValueError("--fork-episodes/--latest-onset-episode must be >= 1, --max-spend-usd >= 0.")
 
 
 def main() -> None:
@@ -728,7 +944,21 @@ def main() -> None:
     load_dotenv(repo_root / ".env")
     args = build_run_parser().parse_args()
     validate_run_args(args)
-    output_path = _create_output_path(args, repo_root)
+    _validate_turnover_args(args)
+    if args.run_path:
+        output_path = Path(args.run_path).resolve()
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        # A plain run that was interrupted continues from its own file.
+        if output_path.exists() and not args.fork_from and not args.resume_from:
+            saved = json.loads(output_path.read_text())
+            stopped = (saved.get("turnover") or {}).get("stopped_reason")
+            if stopped in ("onset", "no_eligible_onset"):
+                log_progress(f"{output_path} already stopped ({stopped}); nothing to run.", True)
+                return
+            if saved.get("results"):
+                args.resume_from = str(output_path)
+    else:
+        output_path = _create_output_path(args, repo_root)
     selected = _load_selected_tasks(args=args, repo_root=repo_root)
     verdict_policy_by_episode, throttle_by_episode = _episode_policy_sequences(
         args,

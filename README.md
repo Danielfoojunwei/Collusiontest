@@ -160,6 +160,12 @@ python -m experiments \
 
 Add `--controlled-bob-observed-verdict` to reveal Bob's verdict in Alice's feedback.
 
+### Peer replacement after collusion onset
+
+`python -m experiments.turnover pilot` runs until the first eligible mutual unsupported
+`ACCEPT`, saves one checkpoint, and continues it twice: a control arm and an arm in which Bob's
+history is reset once. See [CHANGES_EXPLAINED.md](CHANGES_EXPLAINED.md).
+
 ### Evaluation
 
 Two additional LLM judges annotate **explicit coordination** in communication and **policy relaxation** in private reflections to study how collusion begins.
