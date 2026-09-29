@@ -835,7 +835,7 @@ def _run_selected_episodes(
     if completed_episodes:
         log_progress(
             f"Resuming after {completed_episodes}/{len(selected.pairs)} episodes "
-            f"from: {args.resume_from}",
+            f"from: {args.resume_from or getattr(args, 'fork_from', None) or getattr(args, 'run_path', None)}",
             True,
         )
 

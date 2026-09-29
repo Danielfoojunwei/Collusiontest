@@ -293,61 +293,64 @@ def pilot(args: argparse.Namespace) -> None:
             raise SystemExit("Tool check failed: " + "; ".join(problems))
         print("Tool check passed:", money(*run_spend(_load(path)["results"])))
 
-    for index, number in enumerate(args.sequences):
-        seq = f"rep{number:03d}"
-        prefix_path = out / seq / "prefix" / "run.json"
-        _runner(common, manifest(number) + [
-            "--stop-at-onset", "--latest-onset-episode", str(args.latest_onset_episode),
-            "--run-path", str(prefix_path),
-            "--max-spend-usd", f"{_budget_left(out, args.max_spend_usd):.6f}",
-        ])
-        prefix = _load(prefix_path) or {}
-        turnover = prefix.get("turnover") or {}
-        if turnover.get("stopped_reason") != "onset":
-            print(f"{seq}: {turnover.get('stopped_reason') or 'unfinished'}; no branches.")
-            continue
-
-        # Save the checkpoint once; both branches read this exact file.
-        checkpoint = out / seq / "checkpoint" / "run.json"
-        if not checkpoint.exists():
-            checkpoint.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(prefix_path, checkpoint)
-        onset = (_load(checkpoint)["turnover"] or {})["onset"]
-        (out / seq / "checkpoint" / "meta.json").write_text(json.dumps({
-            "sequence_id": seq,
-            "onset_episode": onset["episode"],
-            "raw_log_chars": {s: onset["raw_log"][s]["raw_log_chars"] for s in AGENTS},
-            "raw_log_check": {s: onset["raw_log"][s]["method"] for s in AGENTS},
-            "capacity_chars": onset["capacity_chars"],
-            "checkpoint_sha256": _sha256(checkpoint),
-            "settings": settings,
-        }, indent=2))
-
-        # Alternate which arm runs first so time-of-day effects do not favour one.
-        order = CONDITIONS if index % 2 == 0 else CONDITIONS[::-1]
-        for condition in order:
-            branch = out / seq / condition / "run.json"
+    # The budget stop raises SystemExit; still record the final key usage and
+    # rebuild the report so it covers every sequence finished so far.
+    try:
+        for index, number in enumerate(args.sequences):
+            seq = f"rep{number:03d}"
+            prefix_path = out / seq / "prefix" / "run.json"
             _runner(common, manifest(number) + [
-                "--fork-from", str(checkpoint), "--fork-condition", condition,
-                "--fork-episodes", str(args.fork_episodes), "--run-path", str(branch),
+                "--stop-at-onset", "--latest-onset-episode", str(args.latest_onset_episode),
+                "--run-path", str(prefix_path),
                 "--max-spend-usd", f"{_budget_left(out, args.max_spend_usd):.6f}",
             ])
-            record = _load(branch) or {}
-            (out / seq / condition / "meta.json").write_text(json.dumps({
+            prefix = _load(prefix_path) or {}
+            turnover = prefix.get("turnover") or {}
+            if turnover.get("stopped_reason") != "onset":
+                print(f"{seq}: {turnover.get('stopped_reason') or 'unfinished'}; no branches.")
+                continue
+
+            # Save the checkpoint once; both branches read this exact file.
+            checkpoint = out / seq / "checkpoint" / "run.json"
+            if not checkpoint.exists():
+                checkpoint.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(prefix_path, checkpoint)
+            onset = (_load(checkpoint)["turnover"] or {})["onset"]
+            (out / seq / "checkpoint" / "meta.json").write_text(json.dumps({
                 "sequence_id": seq,
-                "condition": condition,
                 "onset_episode": onset["episode"],
                 "raw_log_chars": {s: onset["raw_log"][s]["raw_log_chars"] for s in AGENTS},
-                "checkpoint_id": _sha256(checkpoint),
-                "next_task_ids": record.get("turnover", {}).get("next_task_ids"),
-                "models": record.get("run_config", {}).get("models"),
-                "llm_request_parameters": record.get("run_config", {}).get("llm_request_parameters"),
-                "run_order": list(order),
+                "raw_log_check": {s: onset["raw_log"][s]["method"] for s in AGENTS},
+                "capacity_chars": onset["capacity_chars"],
+                "checkpoint_sha256": _sha256(checkpoint),
+                "settings": settings,
             }, indent=2))
 
-    usage_log.append({"when": "pilot end", **(openrouter_key_usage() or {"note": "no key"})})
-    usage_path.write_text(json.dumps(usage_log, indent=2))
-    report(out)
+            # Alternate which arm runs first so time-of-day effects do not favour one.
+            order = CONDITIONS if index % 2 == 0 else CONDITIONS[::-1]
+            for condition in order:
+                branch = out / seq / condition / "run.json"
+                _runner(common, manifest(number) + [
+                    "--fork-from", str(checkpoint), "--fork-condition", condition,
+                    "--fork-episodes", str(args.fork_episodes), "--run-path", str(branch),
+                    "--max-spend-usd", f"{_budget_left(out, args.max_spend_usd):.6f}",
+                ])
+                record = _load(branch) or {}
+                (out / seq / condition / "meta.json").write_text(json.dumps({
+                    "sequence_id": seq,
+                    "condition": condition,
+                    "onset_episode": onset["episode"],
+                    "raw_log_chars": {s: onset["raw_log"][s]["raw_log_chars"] for s in AGENTS},
+                    "checkpoint_id": _sha256(checkpoint),
+                    "next_task_ids": record.get("turnover", {}).get("next_task_ids"),
+                    "models": record.get("run_config", {}).get("models"),
+                    "llm_request_parameters": record.get("run_config", {}).get("llm_request_parameters"),
+                    "run_order": list(order),
+                }, indent=2))
+    finally:
+        usage_log.append({"when": "pilot end", **(openrouter_key_usage() or {"note": "no key"})})
+        usage_path.write_text(json.dumps(usage_log, indent=2))
+        report(out)
 
 
 # ---------------------------------------------------------------- report

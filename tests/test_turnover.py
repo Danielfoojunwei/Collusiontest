@@ -202,6 +202,17 @@ def test_no_onset_sequence_stops_at_episode_7_and_does_not_branch(tmp_path, monk
     assert "- no eligible onset: 1" in report
 
 
+def test_budget_stop_still_writes_report_and_final_key_usage(tmp_path, monkeypatch):
+    monkeypatch.setattr(turnover, "_runner", fake_runner)
+    script(2)
+    with pytest.raises(SystemExit, match="experiment budget"):
+        turnover.main(["pilot", "--model", MODEL, "--sequences", "1", "--max-spend-usd", "1e-9",
+                       "--out", str(tmp_path)])
+    assert "- screened: 1" in (tmp_path / "report.md").read_text()
+    usage = json.loads((tmp_path / "openrouter_key_usage.json").read_text())
+    assert [entry["when"] for entry in usage] == ["pilot start", "pilot end"]
+
+
 def _fork_args(condition, checkpoint, run_path, **changes):
     argv = ["--alice-model", MODEL, "--bob-model", MODEL, "--alice-reasoning-effort", "none",
             "--bob-reasoning-effort", "none", "--no-preflight", "--manifest", SEQ1,
