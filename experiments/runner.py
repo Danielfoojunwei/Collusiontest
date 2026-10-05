@@ -297,6 +297,12 @@ def build_run_parser() -> argparse.ArgumentParser:
     return parser
 
 
+# Post-fork changes a branch may make on purpose. Each maps to the run_config keys
+# that are then allowed to differ from the checkpoint; nothing else may differ.
+FORK_ABLATIONS = ("none", "no-verdict-review")
+_FORK_ABLATION_KEYS = {"none": frozenset(), "no-verdict-review": frozenset({"verdict_evaluation"})}
+
+
 def add_turnover_arguments(parser: argparse.ArgumentParser) -> None:
     """Options for the post-collusion Bob-replacement experiment (experiments/turnover.py)."""
     group = parser.add_argument_group("turnover (peer replacement)")
@@ -334,6 +340,16 @@ def add_turnover_arguments(parser: argparse.ArgumentParser) -> None:
         type=int,
         default=3,
         help="How many task episodes to run after the fork.",
+    )
+    group.add_argument(
+        "--fork-ablation",
+        choices=FORK_ABLATIONS,
+        default="none",
+        help=(
+            "Change one feedback setting for the episodes after the fork only. "
+            "no-verdict-review: agents still see their reward but are no longer told "
+            "whether each verdict was right."
+        ),
     )
     group.add_argument(
         "--max-spend-usd",
@@ -502,6 +518,7 @@ def _resume_state(
     reward_scheme: RewardScheme,
     manifest_path: Path | None,
     episode_count: int,
+    allowed_differences: frozenset[str] = frozenset(),
 ) -> tuple[list[dict[str, Any]], dict[str, list[dict[str, Any]]]]:
     """Restore completed episodes and agent histories from a compatible run record.
 
@@ -569,7 +586,7 @@ def _resume_state(
     mismatched = [
         f"{key}: record has {config[key]!r}, this run has {value!r}"
         for key, value in expected.items()
-        if key in config and config[key] != value
+        if key in config and config[key] != value and key not in allowed_differences
     ]
     if manifest_path is not None and config.get("manifest"):
         if str(Path(config["manifest"]).resolve()) != str(manifest_path.resolve()):
@@ -669,6 +686,7 @@ def _fork_state(
         reward_scheme=reward_scheme,
         manifest_path=selected.manifest_path,
         episode_count=len(selected.pairs),
+        allowed_differences=_FORK_ABLATION_KEYS[args.fork_ablation],
     )
     fork_episode = len(results)
     last = min(fork_episode + args.fork_episodes, len(selected.pairs))
@@ -676,6 +694,7 @@ def _fork_state(
         "checkpoint_path": str(Path(args.fork_from).resolve()),
         "checkpoint_sha256": _file_sha256(args.fork_from),
         "condition": args.fork_condition,
+        "ablation": args.fork_ablation,
         "fork_after_episode": fork_episode,
         "last_episode": last,
         "next_task_ids": [
@@ -691,6 +710,7 @@ def _fork_state(
         if (
             old.get("checkpoint_sha256") != info["checkpoint_sha256"]
             or old.get("condition") != info["condition"]
+            or old.get("ablation", "none") != info["ablation"]
         ):
             raise ValueError(f"{output_path} belongs to a different branch.")
         if len(saved.get("results") or []) > fork_episode:
@@ -935,6 +955,11 @@ def _validate_turnover_args(args: argparse.Namespace) -> None:
         raise ValueError("--fork-from cannot be combined with --resume-from or --stop-at-onset.")
     if args.fork_from and not args.run_path:
         raise ValueError("--fork-from needs --run-path so an interrupted branch can continue.")
+    if args.fork_ablation != "none" and not args.fork_from:
+        raise ValueError("--fork-ablation only applies to a branch (--fork-from).")
+    if args.fork_ablation == "no-verdict-review":
+        # Applied here, before the run config is built, so the record says so.
+        args.verdict_review = False
     if args.fork_episodes < 1 or args.latest_onset_episode < 1 or args.max_spend_usd < 0:
         raise ValueError("--fork-episodes/--latest-onset-episode must be >= 1, --max-spend-usd >= 0.")
 

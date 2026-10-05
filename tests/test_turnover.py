@@ -309,6 +309,49 @@ def test_branches_run_the_same_tasks_and_bob_accumulates(prefix, tmp_path):
     assert alice_c[:fork_len] == alice_r[:fork_len]
 
 
+def test_no_verdict_review_ablation_changes_only_post_fork_feedback(prefix, tmp_path):
+    plain = fork(prefix, "replacement", tmp_path / "replacement" / "run.json")
+    ablated = fork(prefix, "replacement", tmp_path / "ablated" / "run.json",
+                   "--fork-ablation", "no-verdict-review")
+    assert ablated["turnover"]["ablation"] == "no-verdict-review"
+    assert plain["turnover"]["ablation"] == "none"
+    # The shared past is untouched: the checkpoint episodes still carry the review.
+    assert ablated["results"][:2] == load(prefix)["results"]
+    for episode in ablated["results"][2:]:
+        for agent_id in ("alice", "bob"):
+            feedback = episode["agents"][agent_id]["outcome_feedback"]
+            assert "## Reward" in feedback
+            assert "Verdict review" not in feedback
+    for episode in plain["results"][2:]:
+        assert "Verdict review" in episode["agents"]["bob"]["outcome_feedback"]
+    # Same tasks as the plain replacement arm.
+    assert [e["task_ids"] for e in ablated["results"]] == [e["task_ids"] for e in plain["results"]]
+
+
+def test_fork_ablation_needs_a_fork_and_a_matching_branch(prefix, tmp_path):
+    with pytest.raises(ValueError, match="only applies to a branch"):
+        run_runner("--manifest", SEQ1, "--fork-ablation", "no-verdict-review",
+                   "--run-path", str(tmp_path / "x" / "run.json"))
+    path = tmp_path / "branch" / "run.json"
+    fork(prefix, "replacement", path, "--fork-episodes", "1")
+    with pytest.raises(ValueError, match="different branch"):
+        fork(prefix, "replacement", path, "--fork-ablation", "no-verdict-review")
+
+
+def test_ablate_command_runs_from_saved_checkpoints(tmp_path, monkeypatch):
+    monkeypatch.setattr(turnover, "_runner", fake_runner)
+    script(2)
+    turnover.main(["pilot", "--model", MODEL, "--sequences", "1", "--max-spend-usd", "50",
+                   "--out", str(tmp_path)])
+    before = turnover.total_spend(tmp_path)[0]
+    turnover.main(["ablate", "--ablation", "no-verdict-review", "--max-spend-usd", "50",
+                   "--out", str(tmp_path)])
+    record = load(tmp_path / "rep001" / "replacement-no-verdict-review" / "run.json")
+    assert record["turnover"]["ablation"] == "no-verdict-review"
+    assert record["turnover"]["condition"] == "replacement"
+    assert turnover.total_spend(tmp_path)[0] > before  # the new arm counts against the budget
+
+
 def test_interrupted_branch_continues_without_repeating_paid_episodes(prefix, tmp_path):
     path = tmp_path / "replacement" / "run.json"
     # A tiny budget stops the branch after its first episode.

@@ -35,6 +35,9 @@ from typing import Any
 
 AGENTS = ("alice", "bob")
 CONDITIONS = ("control", "replacement")
+# Extra branches from the same checkpoints: replacement plus one post-fork change.
+ABLATIONS = ("no-verdict-review",)
+ABLATION_ARMS = tuple(f"replacement-{a}" for a in ABLATIONS)
 SEQUENCE_DIR = "task/task_sequences_50x10"
 
 
@@ -191,7 +194,7 @@ def total_spend(out: Path) -> tuple[float, int]:
     for run_path in out.glob("*/prefix/run.json"):
         s, u = run_spend(json.loads(run_path.read_text()).get("results") or [])
         spent, unknown = spent + s, unknown + u
-    for condition in CONDITIONS:
+    for condition in CONDITIONS + ABLATION_ARMS:
         for run_path in out.glob(f"*/{condition}/run.json"):
             record = json.loads(run_path.read_text())
             fork = (record.get("turnover") or {}).get("fork_after_episode", 0)
@@ -562,6 +565,55 @@ def report(out: Path) -> None:
     print(f"Wrote {out / 'results.csv'} and {out / 'report.md'}")
 
 
+def ablate(args: argparse.Namespace) -> None:
+    """Run ``replacement-<ablation>`` from every saved checkpoint in ``--out``.
+
+    Uses the pilot's saved settings so the only difference from the replacement arm
+    is the ablation. Shares the pilot's budget (spend is counted over the whole folder).
+    """
+    from dotenv import load_dotenv
+
+    load_dotenv(Path.cwd() / ".env")
+    out = Path(args.out)
+    settings = _load(out / "settings.json")
+    if not settings:
+        raise SystemExit(f"{out} has no settings.json; run the pilot first.")
+    common = [
+        "--alice-model", settings["model"], "--bob-model", settings["model"],
+        "--alice-reasoning-effort", settings["reasoning_effort"],
+        "--bob-reasoning-effort", settings["reasoning_effort"],
+        "--no-preflight", "--quiet",
+    ]
+    for agent_id in AGENTS:
+        if settings.get("temperature") is not None:
+            common += [f"--{agent_id}-temperature", str(settings["temperature"])]
+        if settings.get("max_output_tokens") is not None:
+            common += [f"--{agent_id}-max-output-tokens", str(settings["max_output_tokens"])]
+    usage_path = out / "openrouter_key_usage.json"
+    usage_log = _load(usage_path) or []
+    usage_log.append({"when": f"ablate {args.ablation} start", **(openrouter_key_usage() or {"note": "no key"})})
+    usage_path.write_text(json.dumps(usage_log, indent=2))
+    arm = f"replacement-{args.ablation}"
+    wanted = set(args.sequences) if args.sequences else None
+    try:
+        for checkpoint in sorted(out.glob("rep*/checkpoint/run.json")):
+            seq_dir = checkpoint.parent.parent
+            number = int(seq_dir.name[3:])
+            if wanted is not None and number not in wanted:
+                continue
+            _runner(common, [
+                "--manifest", f"{SEQUENCE_DIR}/rep{number:03d}_sampled_manifest.json",
+                "--fork-from", str(checkpoint), "--fork-condition", "replacement",
+                "--fork-ablation", args.ablation,
+                "--fork-episodes", str(settings["fork_episodes"]),
+                "--run-path", str(seq_dir / arm / "run.json"),
+                "--max-spend-usd", f"{_budget_left(out, args.max_spend_usd):.6f}",
+            ])
+    finally:
+        usage_log.append({"when": f"ablate {args.ablation} end", **(openrouter_key_usage() or {"note": "no key"})})
+        usage_path.write_text(json.dumps(usage_log, indent=2))
+
+
 # ---------------------------------------------------------------- command line
 
 
@@ -579,12 +631,20 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--max-spend-usd", type=float, required=True, help="Whole-experiment spend stop.")
     p.add_argument("--check-tools", action="store_true", help="Run one real episode first to test tool calls.")
     p.add_argument("--out", default="results/turnover")
+    a = sub.add_parser("ablate", help="replacement + one post-fork change, from saved checkpoints")
+    a.add_argument("--ablation", choices=ABLATIONS, required=True)
+    a.add_argument("--sequences", default="", help="Sequence numbers (default: every checkpoint)")
+    a.add_argument("--max-spend-usd", type=float, required=True, help="Whole-folder spend stop.")
+    a.add_argument("--out", default="results/turnover")
     r = sub.add_parser("report", help="Rebuild results.csv and report.md from saved files")
     r.add_argument("--in", dest="out", default="results/turnover")
     args = parser.parse_args(argv)
     if args.command == "pilot":
         args.sequences = [int(x) for x in args.sequences.split(",") if x.strip()]
         pilot(args)
+    elif args.command == "ablate":
+        args.sequences = [int(x) for x in args.sequences.split(",") if x.strip()]
+        ablate(args)
     else:
         report(Path(args.out))
 
