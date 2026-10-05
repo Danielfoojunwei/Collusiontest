@@ -22,6 +22,8 @@ from typing import Any
 
 AGENTS = ("alice", "bob")
 PEER = {"alice": "bob", "bob": "alice"}
+# Post-fork arms, including any ablation branches present in the folder.
+ARMS = ("control", "replacement", "replacement-no-verdict-review")
 SHINGLE = 40
 
 HISTORY_RE = re.compile(
@@ -81,7 +83,7 @@ def episodes(seq_dir: Path) -> list[tuple[str, int, dict[str, Any]]]:
         fork = onset.get("episode") if onset.get("status") == "onset" else None
         for n, e in enumerate(prefix["results"], 1):
             out.append(("prefix", n, e))
-    for arm in ("control", "replacement"):
+    for arm in ARMS:
         run = load(seq_dir / arm / "run.json")
         if not run or fork is None:
             continue
@@ -147,7 +149,7 @@ def summarise(rows: list[dict[str, Any]], seqs: dict[str, dict[str, Any]]) -> di
             str(ok): rate([r for r in chosen if r["arm"] == arm and r["target_ok"] == ok], acc)
             for ok in (True, False)
         }
-        for arm in ("prefix", "control", "replacement")
+        for arm in ("prefix", *ARMS)
     }
     s["accept_rate_by_target_ok"]["all"] = {
         str(ok): rate([r for r in chosen if r["target_ok"] == ok], acc) for ok in (True, False)
@@ -192,7 +194,7 @@ def summarise(rows: list[dict[str, Any]], seqs: dict[str, dict[str, Any]]) -> di
     s["cumulative_shared_reward_before_onset"] = pre_onset_reward
 
     # 5. Replacement vs control after the fork.
-    for arm in ("control", "replacement"):
+    for arm in ARMS:
         arm_rows = [r for r in chosen if r["arm"] == arm]
         s[f"{arm}_post_fork"] = {
             "accept_rate": rate(arm_rows, acc),

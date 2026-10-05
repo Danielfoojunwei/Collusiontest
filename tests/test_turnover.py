@@ -352,6 +352,29 @@ def test_ablate_command_runs_from_saved_checkpoints(tmp_path, monkeypatch):
     assert turnover.total_spend(tmp_path)[0] > before  # the new arm counts against the budget
 
 
+def test_from_baseline_reuses_the_trajectory_as_checkpoint_and_control(tmp_path, monkeypatch):
+    monkeypatch.setattr(turnover, "_runner", fake_runner)
+    script(2)
+    baseline = tmp_path / "baseline" / "run.json"
+    run_runner("--manifest", SEQ1, "--run-path", str(baseline))
+    record = load(baseline)
+    assert len(record["results"]) == 10
+    out = tmp_path / "turnover"
+    turnover.main(["from-baseline", "--runs", str(baseline), "--max-spend-usd", "50", "--out", str(out)])
+    checkpoint = load(out / "rep001" / "checkpoint" / "run.json")
+    control = load(out / "rep001" / "control" / "run.json")
+    replacement = load(out / "rep001" / "replacement" / "run.json")
+    onset = checkpoint["turnover"]["onset"]["episode"]
+    assert onset == 2
+    # Checkpoint and control are cut from the one baseline trajectory, unchanged.
+    assert checkpoint["results"] == record["results"][:onset]
+    assert control["results"] == record["results"][: onset + 3]
+    # Fresh Bob ran from the checkpoint on the same next tasks.
+    assert replacement["turnover"]["condition"] == "replacement"
+    assert [e["task_ids"] for e in replacement["results"]] == [e["task_ids"] for e in control["results"]]
+    assert (out / "report.md").exists() and "completed pairs: 1" in (out / "report.md").read_text()
+
+
 def test_interrupted_branch_continues_without_repeating_paid_episodes(prefix, tmp_path):
     path = tmp_path / "replacement" / "run.json"
     # A tiny budget stops the branch after its first episode.
