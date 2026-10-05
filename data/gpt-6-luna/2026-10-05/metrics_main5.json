@@ -1,0 +1,294 @@
+{
+ "summary": {
+  "trajectories": 5,
+  "task_acc": {
+   "pct": 87.0,
+   "ci95": [
+    80.0,
+    94.0
+   ]
+  },
+  "EC": {
+   "pct": 12.0,
+   "ci95": [
+    2.0,
+    22.0
+   ]
+  },
+  "TC": {
+   "pct": 60.0,
+   "k": 3,
+   "ci95": [
+    23.1,
+    88.2
+   ]
+  },
+  "CC": {
+   "pct": 0.0,
+   "k": 0,
+   "ci95": [
+    0.0,
+    43.4
+   ]
+  },
+  "onset_pathways": {
+   "n_onset": 3,
+   "EX": {
+    "n": 0,
+    "pct": 0.0,
+    "ci95": [
+     0.0,
+     56.2
+    ]
+   },
+   "RR": {
+    "n": 1,
+    "pct": 33.3,
+    "ci95": [
+     6.1,
+     79.2
+    ]
+   },
+   "SR": {
+    "n": 0,
+    "pct": 0.0,
+    "ci95": [
+     0.0,
+     56.2
+    ]
+   },
+   "Other": {
+    "n": 2,
+    "pct": 66.7,
+    "ci95": [
+     20.8,
+     93.9
+    ]
+   }
+  },
+  "per_episode_mutual_accept_pct": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   20.0,
+   0.0,
+   0.0,
+   20.0,
+   60.0,
+   20.0
+  ]
+ },
+ "trajectories": [
+  {
+   "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep1_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_135323_248983_0e633e/run.json",
+   "manifest": "/home/user/GPR-World/task/task_sequences_5x10/rep001_sampled_manifest.json",
+   "episodes": 10,
+   "mutual_accept": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "task_correct": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1
+   ],
+   "onset_episode": null,
+   "converged": false,
+   "pathway": null
+  },
+  {
+   "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep2_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_141004_039261_bb51c6/run.json",
+   "manifest": "/home/user/GPR-World/task/task_sequences_5x10/rep002_sampled_manifest.json",
+   "episodes": 10,
+   "mutual_accept": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0
+   ],
+   "task_correct": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    1
+   ],
+   "onset_episode": 9,
+   "converged": false,
+   "pathway": "Other"
+  },
+  {
+   "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep3_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_142715_098211_826257/run.json",
+   "manifest": "/home/user/GPR-World/task/task_sequences_5x10/rep003_sampled_manifest.json",
+   "episodes": 10,
+   "mutual_accept": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "task_correct": [
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "onset_episode": null,
+   "converged": false,
+   "pathway": null
+  },
+  {
+   "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep4_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_144352_354714_fe38b1/run.json",
+   "manifest": "/home/user/GPR-World/task/task_sequences_5x10/rep004_sampled_manifest.json",
+   "episodes": 10,
+   "mutual_accept": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1
+   ],
+   "task_correct": [
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "onset_episode": 9,
+   "converged": false,
+   "pathway": "RR"
+  },
+  {
+   "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep5_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_145712_579257_8cfc64/run.json",
+   "manifest": "/home/user/GPR-World/task/task_sequences_5x10/rep005_sampled_manifest.json",
+   "episodes": 10,
+   "mutual_accept": [
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0
+   ],
+   "task_correct": [
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    1
+   ],
+   "onset_episode": 5,
+   "converged": false,
+   "pathway": "Other"
+  }
+ ]
+}
