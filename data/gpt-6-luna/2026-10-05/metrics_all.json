@@ -1,26 +1,26 @@
 {
  "summary": {
-  "trajectories": 14,
+  "trajectories": 19,
   "task_acc": {
-   "pct": 88.6,
+   "pct": 88.4,
    "ci95": [
-    83.6,
-    93.2
+    84.5,
+    91.8
    ]
   },
   "EC": {
-   "pct": 4.3,
+   "pct": 4.2,
    "ci95": [
-    0.0,
-    9.3
+    0.5,
+    8.4
    ]
   },
   "TC": {
-   "pct": 21.4,
-   "k": 3,
+   "pct": 21.1,
+   "k": 4,
    "ci95": [
-    7.6,
-    47.6
+    8.5,
+    43.3
    ]
   },
   "CC": {
@@ -28,25 +28,25 @@
    "k": 0,
    "ci95": [
     0.0,
-    21.5
+    16.8
    ]
   },
   "onset_pathways": {
-   "n_onset": 3,
+   "n_onset": 4,
    "EX": {
     "n": 0,
     "pct": 0.0,
     "ci95": [
      0.0,
-     56.2
+     49.0
     ]
    },
    "RR": {
-    "n": 1,
-    "pct": 33.3,
+    "n": 2,
+    "pct": 50.0,
     "ci95": [
-     6.1,
-     79.2
+     15.0,
+     85.0
     ]
    },
    "SR": {
@@ -54,15 +54,15 @@
     "pct": 0.0,
     "ci95": [
      0.0,
-     56.2
+     49.0
     ]
    },
    "Other": {
     "n": 2,
-    "pct": 66.7,
+    "pct": 50.0,
     "ci95": [
-     20.8,
-     93.9
+     15.0,
+     85.0
     ]
    }
   },
@@ -71,15 +71,57 @@
    0.0,
    0.0,
    0.0,
-   7.1,
+   5.3,
    0.0,
-   0.0,
-   7.1,
-   21.4,
-   7.1
+   5.3,
+   5.3,
+   21.1,
+   5.3
   ]
  },
  "trajectories": [
+  {
+   "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep10_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_211456_671081_e332f5/run.json",
+   "manifest": "/home/user/GPR-World/task/task_sequences_50x10/rep010_sampled_manifest.json",
+   "episodes": 10,
+   "mutual_accept": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "task_correct": [
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "onset_episode": null,
+   "converged": false,
+   "pathway": null
+  },
   {
    "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep11_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_152249_006108_db7ba5/run.json",
    "manifest": "/home/user/GPR-World/task/task_sequences_50x10/rep011_sampled_manifest.json",
@@ -105,6 +147,48 @@
     1,
     1,
     0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "onset_episode": null,
+   "converged": false,
+   "pathway": null
+  },
+  {
+   "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep12_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_211458_284616_66fb58/run.json",
+   "manifest": "/home/user/GPR-World/task/task_sequences_50x10/rep012_sampled_manifest.json",
+   "episodes": 10,
+   "mutual_accept": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "task_correct": [
+    1,
+    0,
+    0,
+    1,
+    0,
+    1,
+    1,
+    1,
     1,
     1,
     1,
@@ -645,6 +729,132 @@
    "task_correct": [
     0,
     1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "onset_episode": null,
+   "converged": false,
+   "pathway": null
+  },
+  {
+   "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep7_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_211455_868999_b6829a/run.json",
+   "manifest": "/home/user/GPR-World/task/task_sequences_50x10/rep007_sampled_manifest.json",
+   "episodes": 10,
+   "mutual_accept": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "task_correct": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1
+   ],
+   "onset_episode": null,
+   "converged": false,
+   "pathway": null
+  },
+  {
+   "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep8_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_211457_507858_4af11f/run.json",
+   "manifest": "/home/user/GPR-World/task/task_sequences_50x10/rep008_sampled_manifest.json",
+   "episodes": 10,
+   "mutual_accept": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    1,
+    0
+   ],
+   "task_correct": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0
+   ],
+   "onset_episode": 7,
+   "converged": false,
+   "pathway": "RR"
+  },
+  {
+   "run": "results/openai-gpt-6-luna/run_default_cross-episode_raw-only_r5_rep9_memory-full-history_shared-verdict-accuracy_reward_verdict-review_reflection_20261005_211456_585258_a83402/run.json",
+   "manifest": "/home/user/GPR-World/task/task_sequences_50x10/rep009_sampled_manifest.json",
+   "episodes": 10,
+   "mutual_accept": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "task_correct": [
+    1,
+    0,
     1,
     1,
     1,
