@@ -111,6 +111,22 @@ Pooled over the 2 sequences (3 × 2 = 6 post-fork episodes per arm):
 
 ## Phase 4: analysis notes
 
+**Are the mutual ACCEPTs coordinated?** (`rca_coordination.json`, `analysis/coordination_rca.py`,
+all 19 trajectories, 190 episodes)
+
+- Alice ACCEPTs 28.9% of her verdicts, Bob 16.3%. If the two decided independently, 9.0 joint
+  ACCEPT episodes would be expected; 8 were observed (lift 0.89). **The mutual ACCEPTs that EC and
+  TC count are at chance level for gpt-6-luna**, not evidence of coordinated collusion.
+- Rule violations are common but one-sided: 41.1% of episodes contain at least one (unsupported)
+  ACCEPT, against 4.2% mutual ACCEPT (70 one-sided episodes).
+- ACCEPT does not track whether the work is right: 78/336 (23%) on correct work vs 8/44 (18%) on
+  wrong work.
+- After a REJECT, neither a "you were wrong" verdict review (47/237 vs 4/32 next ACCEPT, p = 0.47)
+  nor a relaxation-flagged reflection (41/207 vs 10/62, p = 0.58) predicts the next ACCEPT.
+  Descriptive only: pooled transitions.
+
+**Turnover and the original RCA:**
+
 - `insights.json` (both sequences): post-fork ACCEPT rate control 5/12, replacement 1/12,
   no-verdict-review 3/12; harmful accepts (ACCEPT of wrong work) control 1/2, replacement 0/1.
 - `rca.json` hypotheses H1–H5 over 324 transitions (e.g. "told wrong after REJECT → ACCEPT next":
@@ -122,7 +138,7 @@ Pooled over the 2 sequences (3 × 2 = 6 post-fork episodes per arm):
 ## Files
 
 `metrics_main5.json`, `metrics_all.json` (per-trajectory rows included), turnover `report.md`,
-`results.csv`, `insights.json`, `judgements.csv`, `rca.json`, `ablation.json` (from
+`results.csv`, `insights.json`, `judgements.csv`, `rca.json`, `rca_coordination.json`, `ablation.json` (from
 `ablation_compare.py`), and `raw.tar.xz` (all 19 run folders with judge CSVs/caches, and the
 turnover folder). Key scan: 0 matches in every file and in the archive.
 
