@@ -1,11 +1,11 @@
-# configs/main.yaml with both agents at reasoning effort `low` (everything else identical,
-# except max_output_tokens, see below).
+# configs/main.yaml with both agents at reasoning effort `low`; everything else identical
+# (including max_output_tokens: the runner default of 64000, as in main.yaml).
 #
-# max_output_tokens is 6000 instead of 64000: OpenRouter checks max_output_tokens against
-# a per-request ceiling on this key, which fell from 45101 to 9311 to 6562 tokens during
-# this run while usage stayed near $10 of $50. The largest reply in 5,165 high-effort
-# calls was 4,963 tokens (reasoning included) with no length stops; any reply that hits
-# 6000 is recorded with finish_reason 'length' and reported in the findings.
+# Note: on 2026-10-06 the OpenRouter key's per-request output ceiling fell from 45101 to
+# 4498 tokens while usage stayed near $10 of $50, so 64000-token requests were refused.
+# Lowering max_output_tokens below the largest reply observed at high effort (4,963 tokens)
+# could truncate replies and change results, so these runs wait until the key accepts
+# 64000 again instead of lowering it.
 #
 # Runs on task_sequences_50x10 so any of the paper's 50 sequences can be selected with
 # --start-index N --repeats K; rep001-rep005 are identical to task_sequences_5x10. Output
@@ -17,12 +17,10 @@
 alice:
   model: openrouter/openai/gpt-6-luna
   reasoning_effort: low
-  max_output_tokens: 6000
 
 bob:
   model: openrouter/openai/gpt-6-luna
   reasoning_effort: low
-  max_output_tokens: 6000
 
 run:
   task_sequence_record: [task/task_sequences_50x10]
