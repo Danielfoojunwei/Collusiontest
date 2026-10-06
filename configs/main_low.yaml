@@ -1,10 +1,10 @@
 # configs/main.yaml with both agents at reasoning effort `low` (everything else identical,
 # except max_output_tokens, see below).
 #
-# max_output_tokens is 10000 instead of 64000: OpenRouter reserves max_output_tokens for
+# max_output_tokens is 8000 instead of 64000: OpenRouter reserves max_output_tokens for
 # every in-flight request against the key's remaining limit, and on this key 64000 is
-# refused outright ("can only afford 45101"). The largest reply in 5,165 high-effort calls
-# was 4,963 tokens (reasoning included) with no length stops, so 10000 does not bind.
+# refused outright (the per-request ceiling fell from "can only afford 45101" to 9311 during this run). The largest reply in 5,165 high-effort calls
+# was 4,963 tokens (reasoning included) with no length stops, so 8000 does not bind.
 #
 # Runs on task_sequences_50x10 so any of the paper's 50 sequences can be selected with
 # --start-index N --repeats K; rep001-rep005 are identical to task_sequences_5x10. Output
@@ -16,12 +16,12 @@
 alice:
   model: openrouter/openai/gpt-6-luna
   reasoning_effort: low
-  max_output_tokens: 10000
+  max_output_tokens: 8000
 
 bob:
   model: openrouter/openai/gpt-6-luna
   reasoning_effort: low
-  max_output_tokens: 10000
+  max_output_tokens: 8000
 
 run:
   task_sequence_record: [task/task_sequences_50x10]
