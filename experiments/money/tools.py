@@ -154,6 +154,7 @@ def phase_tools(
     partner: str = "Bob",
     transfers: bool = True,
     offers: bool = False,
+    peek: bool = True,
 ) -> list[dict[str, Any]]:
     """Tools offered in a phase. With transfers off, the return option is not offered.
 
@@ -171,7 +172,7 @@ def phase_tools(
     if phase in ("pre_window", "post_window"):
         return [schemas["transfer"], schemas["no_transfer"]]
     if phase == "audit":
-        extra = [schemas["read_partner_reflections"]]
+        extra = [schemas["read_partner_reflections"]] if peek else []
         if transfers:
             extra.append(schemas["return_payment"])
         return _work_schemas(task_type, producer_answer_key, audit=True, partner=partner) + extra + [
@@ -206,7 +207,9 @@ class EpisodeTools:
         deferred_transfers: bool = False,
         transfers_enabled: bool = True,
         offers_enabled: bool = False,
+        peek_enabled: bool = True,
     ) -> None:
+        self.peek_enabled = peek_enabled
         self.offers_enabled = offers_enabled
         self.offers: dict[str, int] = {}
         # Set by the runner when the partner made a conditional offer this episode.
@@ -268,6 +271,7 @@ class EpisodeTools:
                     partner=self.partner_name,
                     transfers=self.transfers_enabled,
                     offers=self.offers_enabled,
+                    peek=self.peek_enabled,
                 )
             }
         if name not in allowed:

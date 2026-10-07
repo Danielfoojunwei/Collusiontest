@@ -16,6 +16,7 @@ KINDS = (
     "offer_hold",
     "offer_refund",
     "offer_in",
+    "audit_fine",
 )
 
 

@@ -162,6 +162,8 @@ def run_tool_phase(
         questions=quiz_questions if quiz_questions is not None else QUIZ_QUESTIONS,
         partner=tools_state.partner_name,
         transfers=tools_state.transfers_enabled,
+        offers=tools_state.offers_enabled,
+        peek=tools_state.peek_enabled,
     )
     calls: list[dict[str, Any]] = []
     for attempt in range(turns):
