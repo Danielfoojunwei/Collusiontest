@@ -80,6 +80,7 @@ def call_model(
     episode_index: int,
     attempt: int,
     journal_path: Path | None,
+    actor: str = AGENT,
 ) -> tuple[str, list[dict[str, Any]]]:
     """One model response; appends the assistant message and returns (content, tool calls)."""
     recorder = make_llm_usage_recorder(
@@ -88,7 +89,7 @@ def call_model(
         invocation_id=f"rep{config.repetition:03d}",
         episode_id=f"ep{episode_index + 1}",
         episode_index=episode_index,
-        actor=AGENT,
+        actor=actor,
         phase=phase,
         round_idx=None,
         attempt_idx=attempt,
@@ -120,6 +121,7 @@ def call_model(
     if trace:
         transcript.reasoning.append(
             {
+                "actor": actor,
                 "phase": phase,
                 "attempt": attempt,
                 "raw_response_model": _get_attr(response, "model", config.model),
@@ -146,6 +148,7 @@ def run_tool_phase(
     episode_index: int,
     journal_path: Path | None,
     log: Callable[[str], None],
+    quiz_questions=None,
 ) -> list[dict[str, Any]]:
     """Run turns until the phase completes or its turn budget is spent; return the calls."""
     tools_state.phase = phase
@@ -154,9 +157,11 @@ def run_tool_phase(
     schemas = phase_tools(
         phase,
         str(tools_state.state["task_type"]),
-        agent_state(tools_state.state, AGENT).get("answer_key", []),
-        agent_state(tools_state.state, PRODUCER).get("answer_key", []),
-        questions=QUIZ_QUESTIONS,
+        agent_state(tools_state.state, tools_state.agent).get("answer_key", []),
+        agent_state(tools_state.state, tools_state.partner).get("answer_key", []),
+        questions=quiz_questions if quiz_questions is not None else QUIZ_QUESTIONS,
+        partner=tools_state.partner_name,
+        transfers=tools_state.transfers_enabled,
     )
     calls: list[dict[str, Any]] = []
     for attempt in range(turns):
@@ -170,6 +175,7 @@ def run_tool_phase(
             episode_index=episode_index,
             attempt=attempt,
             journal_path=journal_path,
+            actor=tools_state.agent,
         )
         for call in tool_calls:
             name = call["function"]["name"]
@@ -185,7 +191,7 @@ def run_tool_phase(
                 }
             )
         ok = sum(1 for c in calls if c["result"].get("success") or c["result"].get("recorded"))
-        log(f"    {phase} turn {attempt + 1}: {len(tool_calls)} call(s), {ok} ok so far")
+        log(f"    {tools_state.agent} {phase} turn {attempt + 1}: {len(tool_calls)} call(s), {ok} ok so far")
         if tools_state.phase_complete():
             break
     return calls
@@ -200,6 +206,8 @@ def prose_turn(
     transcript: Transcript,
     episode_index: int,
     journal_path: Path | None,
+    actor: str = AGENT,
+    tools: list[dict[str, Any]] | None = None,
 ) -> str:
     """A plain-text turn on a copy of the history; the history itself is unchanged."""
     scratch = list(messages) + [{"role": "user", "content": prompt}]
@@ -207,13 +215,14 @@ def prose_turn(
         config=config,
         messages=scratch,
         # Tool schemas accompany tool-call history; no tool is executed on this turn.
-        tools=[TRANSFER_SCHEMA, NO_TRANSFER_SCHEMA],
+        tools=tools if tools is not None else [TRANSFER_SCHEMA, NO_TRANSFER_SCHEMA],
         tool_choice=None,
         transcript=transcript,
         phase=phase,
         episode_index=episode_index,
         attempt=0,
         journal_path=journal_path,
+        actor=actor,
     )
     return content.strip()
 
