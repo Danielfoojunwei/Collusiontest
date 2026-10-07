@@ -75,6 +75,7 @@ CONDITIONS: dict[str, dict[str, Any]] = {
     # accepts. tight = base score at wallet 8 (is the shared acceptance score necessary?);
     # shared_accept_tight_no_rule = without the written rule (how much does the rule restrain?).
     "tight": {**_BASE, "wallet": 8},
+    "tight_no_rule": {**_BASE, "wallet": 8, "verdict_rule": False},
     "shared_accept_tight_no_rule": {**_BASE, "score_shared": True, "score_basis": "accepted", "wallet": 8,
                                     "verdict_rule": False},
 }
