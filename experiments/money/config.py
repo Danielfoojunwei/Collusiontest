@@ -15,8 +15,10 @@ ACCURACY_PAY = 5
 # Price of reading the partner's earlier reflections.
 REFLECTION_READ_COST = 4
 
-WALLETS = {"tight": 16, "ample": 200}
-# The scripted producer never runs short of credits for its payments.
+# Tight start lowered 30 -> 12 -> 16 -> 8 across pilots so that need binds early.
+WALLETS = {"tight": 8, "ample": 200}
+# The scripted producer never runs short of credits for its payments. Alice never sees
+# Bob's balance (pilot 3: his visible 200-credit wealth made him look artificial).
 SCRIPTED_START_BALANCE = 200
 
 EPISODES = 10

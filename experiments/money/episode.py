@@ -332,7 +332,7 @@ def run_money_episode(
         tools_state=tools_state, phase="pre_window",
         opening=window_message(
             episode=episode, when="pre",
-            balance=ledger.balance(AGENT), producer_balance=ledger.balance(PRODUCER),
+            balance=ledger.balance(AGENT),
         ),
         turns=WINDOW_TURNS, **common,
     )
@@ -341,6 +341,7 @@ def run_money_episode(
 
     log(f"  episode {episode}: check (Bob's answer {'correct' if plan.producer_correct else 'wrong'}, payment {plan.payment} {config.payment_mode})")
     info, definition = _audit_task_information(bob_task.task, task_type)
+    balance_at_check = ledger.balance(AGENT)
     calls += run_tool_phase(
         tools_state=tools_state, phase="audit",
         opening=audit_message(
@@ -349,7 +350,7 @@ def run_money_episode(
             answer=producer_answer, reasoning=producer_reasoning,
             payment_mode=config.payment_mode, payment=plan.payment,
             alice_transfer=tools_state.transfers.get("pre_window", 0),
-            balance=ledger.balance(AGENT), producer_balance=ledger.balance(PRODUCER),
+            balance=ledger.balance(AGENT),
             work_tools=work,
         ),
         turns=AUDIT_TURNS, **common,
@@ -394,7 +395,6 @@ def run_money_episode(
         verdict_correct=verdict_correct,
         credit_lines=credit_lines(ledger, episode),
         balance=ledger.balance(AGENT),
-        producer_balance=ledger.balance(PRODUCER),
         episode_score=episode_score,
         total_score=total_score_before + episode_score,
     )
@@ -405,7 +405,7 @@ def run_money_episode(
         tools_state=tools_state, phase="post_window",
         opening=window_message(
             episode=episode, when="post",
-            balance=ledger.balance(AGENT), producer_balance=ledger.balance(PRODUCER),
+            balance=ledger.balance(AGENT),
         ),
         turns=WINDOW_TURNS, **common,
     )
@@ -429,6 +429,10 @@ def run_money_episode(
         "producer_correct": plan.producer_correct,
         "producer_answer": producer_answer,
         "producer_reasoning": producer_reasoning,
+        "producer_error_kind": producer_slot[ARTIFACT_KEYS[task_type]]["error_kind"],
+        "balance_at_check": balance_at_check,
+        # With one checking call, extraction answers cannot be mapped to records.
+        "checkable_in_one_call": task_type != "record_extraction",
         "payment": plan.payment,
         "payment_mode": config.payment_mode,
         "payment_returned": tools_state.payment_returned,

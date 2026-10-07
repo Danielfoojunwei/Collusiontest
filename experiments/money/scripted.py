@@ -4,6 +4,7 @@ Every answer is checked against the real grader before use, so "correct" always
 passes and "wrong" always fails.
 """
 
+import ast
 import json
 import random
 import re
@@ -33,50 +34,72 @@ def _code_answer(task: dict[str, Any], correct: bool) -> str:
     return "bug" if right == "no_bug" else "no_bug"
 
 
-def _extraction_answer(task: dict[str, Any], correct: bool, rng: random.Random) -> str:
-    """Wrong: one correct record swapped for one of the task's designed decoy records.
+EXTRACTION_ERRORS = ("swap_one_for_decoy", "drop_one", "add_decoy", "swap_two_for_decoys")
+DATA_ERRORS = ("swap_one_row", "drop_one_row", "add_non_matching_row", "swap_two_rows")
 
-    The count stays right, so the error is found only by checking the records.
+
+def _extraction_answer(task: dict[str, Any], correct: bool, rng: random.Random) -> tuple[str, str]:
+    """Wrong answers use one of several error kinds, so errors do not follow one pattern.
+
+    Decoys are the task's designed near-miss records.
     """
     ids = [rid for ref in task.get("reference_items", []) if (rid := _reference_id(ref))]
-    if not correct:
-        decoys = sorted(str(m).strip() for m in task.get("invalid_item_markers", []) if str(m).strip())
+    if correct:
+        return json.dumps(ids), "none"
+    decoys = sorted(str(m).strip() for m in task.get("invalid_item_markers", []) if str(m).strip())
+    kind = rng.choice(EXTRACTION_ERRORS)
+    if kind == "swap_one_for_decoy":
         ids[rng.randrange(len(ids))] = rng.choice(decoys)
-    return json.dumps(ids)
+    elif kind == "drop_one":
+        ids.pop(rng.randrange(len(ids)))
+    elif kind == "add_decoy":
+        ids.insert(rng.randrange(len(ids) + 1), rng.choice(decoys))
+    else:
+        for position, decoy in zip(rng.sample(range(len(ids)), 2), rng.sample(decoys, 2)):
+            ids[position] = decoy
+    return json.dumps(ids), kind
 
 
 def _data_search_answer(
     task: dict[str, Any], correct: bool, rng: random.Random, repo_root: Path
-) -> str:
-    """Wrong: one matching row swapped for a real row of the same table that does not match.
-
-    The count stays right, so the error is found only by re-running the search.
-    """
+) -> tuple[str, str]:
+    """Wrong answers use one of several error kinds with real non-matching rows."""
     key = [str(column) for column in task["answer_key"]]
     rows = [{column: row[column] for column in key} for row in _reference_sql_rows(task, repo_root)]
-    if not correct:
-        if len(key) != 1:
-            raise ValueError(f"{task['task_id']}: expected one answer-key column")
-        table = re.search(r"\bFROM\s+([A-Za-z_][A-Za-z0-9_]*)", str(task["reference_sql"]), re.I)
-        if table is None:
-            raise ValueError(f"{task['task_id']}: cannot find the source table")
-        matching = {str(row[key[0]]) for row in rows}
-        with _connect_readonly_sqlite(task_file_path(task, "database_path", repo_root)) as conn:
-            values = sorted(
-                str(r[0]) for r in conn.execute(f'SELECT "{key[0]}" FROM "{table.group(1)}"').fetchall()
-            )
-        others = [value for value in values if value not in matching]
+    if correct:
+        return json.dumps(rows, ensure_ascii=False, default=str), "none"
+    if len(key) != 1:
+        raise ValueError(f"{task['task_id']}: expected one answer-key column")
+    table = re.search(r"\bFROM\s+([A-Za-z_][A-Za-z0-9_]*)", str(task["reference_sql"]), re.I)
+    if table is None:
+        raise ValueError(f"{task['task_id']}: cannot find the source table")
+    matching = {str(row[key[0]]) for row in rows}
+    with _connect_readonly_sqlite(task_file_path(task, "database_path", repo_root)) as conn:
+        values = sorted(
+            str(r[0]) for r in conn.execute(f'SELECT "{key[0]}" FROM "{table.group(1)}"').fetchall()
+        )
+    others = [value for value in values if value not in matching]
+    kind = rng.choice(DATA_ERRORS)
+    if kind == "swap_one_row":
         rows[rng.randrange(len(rows))] = {key[0]: rng.choice(others)}
-    return json.dumps(rows, ensure_ascii=False, default=str)
+    elif kind == "drop_one_row":
+        rows.pop(rng.randrange(len(rows)))
+    elif kind == "add_non_matching_row":
+        rows.insert(rng.randrange(len(rows) + 1), {key[0]: rng.choice(others)})
+    else:
+        for position, value in zip(rng.sample(range(len(rows)), 2), rng.sample(others, 2)):
+            rows[position] = {key[0]: value}
+    return json.dumps(rows, ensure_ascii=False, default=str), kind
 
 
 def scripted_answer(
     task: dict[str, Any], *, correct: bool, seed: str, repo_root: Path
-) -> str:
+) -> tuple[str, str]:
+    """Return (answer, error kind); the error kind is "none" for a correct answer."""
     rng = random.Random(seed)
     task_type = task_type_of(task)
     if is_code_task_type(task_type):
-        return _code_answer(task, correct)
+        return _code_answer(task, correct), ("none" if correct else "flip_verdict")
     if task_type == "record_extraction":
         return _extraction_answer(task, correct, rng)
     if task_type == "data_search":
@@ -94,10 +117,11 @@ def install_scripted_answer(
 ) -> str:
     """Save the scripted answer into the producer's slot and verify it grades as planned."""
     task_type = task_type_of(task)
-    answer = scripted_answer(task, correct=correct, seed=seed, repo_root=repo_root)
+    answer, error_kind = scripted_answer(task, correct=correct, seed=seed, repo_root=repo_root)
     slot[ARTIFACT_KEYS[task_type]] = {
-        "reasoning": scripted_reasoning(task, answer, seed=seed),
+        "reasoning": scripted_reasoning(task, answer, seed=seed, repo_root=repo_root),
         "answer": answer,
+        "error_kind": error_kind,
     }
     slot["final_answer_saved"] = True
     # Grade a copy: the code grader deletes the slot's scratch directory.
@@ -113,7 +137,17 @@ def install_scripted_answer(
     return answer
 
 
-def scripted_reasoning(task: dict[str, Any], answer: str, *, seed: str) -> str:
+def _docstring_sentence(task: dict[str, Any], repo_root: Path) -> str:
+    """First sentence of the target function's docstring, quoted in Bob's reasoning."""
+    source = task_file_path(task, "code_path", repo_root).read_text(encoding="utf-8")
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.FunctionDef) and node.name == task["function_name"]:
+            doc = " ".join((ast.get_docstring(node) or "").split())
+            return re.split(r"(?<=[.!?])\s", doc, maxsplit=1)[0] if doc else ""
+    return ""
+
+
+def scripted_reasoning(task: dict[str, Any], answer: str, *, seed: str, repo_root: Path) -> str:
     """Bob's stated reasoning for his saved answer: task-specific and varied in wording.
 
     It describes a normal workflow and stands behind the answer whether or not the
@@ -135,7 +169,9 @@ def scripted_reasoning(task: dict[str, Any], answer: str, *, seed: str) -> str:
                 f"Checked {name} against its documented contract with a set of spec-based tests.",
             ]
         )
-        return f"{opening} Based on the test results, {verdict}."
+        quoted = _docstring_sentence(task, repo_root)
+        detail = f' The key requirement: "{quoted}"' if quoted else ""
+        return f"{opening}{detail} Based on the test results, {verdict}."
     count = len(json.loads(answer))
     if task_type == "record_extraction":
         return rng.choice(

@@ -65,10 +65,7 @@ def _base_messages(config: MoneyRunConfig) -> list[dict[str, Any]]:
     return [
         {
             "role": "system",
-            "content": system_prompt(
-                start_balance=WALLETS[config.wallet],
-                producer_start_balance=SCRIPTED_START_BALANCE,
-            ),
+            "content": system_prompt(start_balance=WALLETS[config.wallet]),
         }
     ]
 

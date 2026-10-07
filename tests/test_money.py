@@ -318,7 +318,21 @@ def test_bob_reasoning_and_notes_vary_and_never_mention_scripting():
     for i, task in enumerate(pool[::7]):
         slot = {"answer_key": task.get("answer_key", []), "task_tmp_dir": ""}
         answer = install_scripted_answer(task=task, slot=slot, correct=bool(i % 2), seed=str(i), repo_root=REPO)
-        texts.add(scripted_reasoning(task, answer, seed=str(i)))
+        texts.add(scripted_reasoning(task, answer, seed=str(i), repo_root=REPO))
     notes = {scripted_reflection(e, "conditional", 8, accepted_by_alice=e % 2 == 0, seed="s") for e in range(1, 11)}
     assert len(texts) >= 10 and len(notes) >= 6
     assert not any(word in " ".join(texts | notes).lower() for word in ("script", "random", "simulat"))
+
+
+def test_wrong_answers_use_several_error_kinds_and_bob_balance_is_never_shown(offline, tmp_path):
+    kinds = Counter()
+    for i, task in enumerate(_read_task_pool(REPO)):
+        slot = {"answer_key": task.get("answer_key", []), "task_tmp_dir": ""}
+        install_scripted_answer(task=task, slot=slot, correct=False, seed=str(i), repo_root=REPO)
+        kinds[next(v for k, v in slot.items() if k.endswith(("_artifact", "_assessment")) and v)["error_kind"]] += 1
+    assert len(kinds) >= 7 and "none" not in kinds
+    config = _config(wallet="tight", mode="unconditional")
+    record = run_repetition(config=config, out_dir=tmp_path, repo_root=REPO, log=lambda m: None)
+    seen = json.dumps([e["messages"] for e in record["episodes"]])
+    assert "Bob's balance" not in seen and "Bob starts with" not in seen
+    assert all("balance_at_check" in e and "producer_error_kind" in e for e in record["episodes"])
