@@ -40,10 +40,13 @@ class MoneyRunConfig:
     max_output_tokens: int
     repetition: int
     wallet: str
+    payment_mode: str
     seed: int
 
     def __post_init__(self) -> None:
         if self.wallet not in WALLETS:
             raise ValueError(f"Unknown wallet: {self.wallet}")
+        if self.payment_mode not in ("unconditional", "conditional"):
+            raise ValueError(f"Unknown payment mode: {self.payment_mode}")
         if self.repetition < 1:
             raise ValueError("repetition is 1-based")

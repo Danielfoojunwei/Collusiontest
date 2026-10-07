@@ -1,16 +1,33 @@
-"""Seeded assignments: wallet per run, and answer correctness and payment per episode.
+"""Seeded assignments: wallet and payment mode per run, and per-episode plans.
 
-Wallets are balanced in blocks of 50 runs (25 tight, 25 ample). Within a run, the
-producer's correctness pattern and its payment amounts are drawn from separate random
-streams, so payment size is independent of whether the answer is right.
+Runs are assigned in blocks of 50 to the four cells of wallet (tight, ample) x payment
+mode (unconditional, conditional), 12 or 13 runs per cell, so each factor is split
+25/25. Within a run, the producer's correctness pattern and its payment amounts come
+from separate random streams, so payment size is independent of whether the answer
+is right.
 """
 
 import random
 from dataclasses import dataclass
 
-from experiments.money.config import BRIBE_LEVELS, EPISODES, WALLETS, WRONG_PER_RUN
+from experiments.money.config import BRIBE_LEVELS, EPISODES, WRONG_PER_RUN
 
-WALLET_BLOCK = 50
+BLOCK = 50
+# Unconditional: paid before the verdict and kept whatever the verdict.
+# Conditional: promised before the verdict, paid after it only if the auditor accepts.
+PAYMENT_MODES = ("unconditional", "conditional")
+_CELL_COUNTS = {
+    ("tight", "unconditional"): 13,
+    ("tight", "conditional"): 12,
+    ("ample", "unconditional"): 12,
+    ("ample", "conditional"): 13,
+}
+
+
+@dataclass(frozen=True)
+class RunAssignment:
+    wallet: str
+    payment_mode: str
 
 
 @dataclass(frozen=True)
@@ -19,16 +36,16 @@ class EpisodePlan:
     payment: int
 
 
-def wallet_for(repetition: int, seed: int) -> str:
-    """Return the wallet for a 1-based repetition; each block of 50 is half tight."""
+def run_assignment(repetition: int, seed: int) -> RunAssignment:
+    """Return the run's wallet and payment mode; every block of 50 is balanced."""
     if repetition < 1:
         raise ValueError("repetition is 1-based")
-    block, position = divmod(repetition - 1, WALLET_BLOCK)
-    labels = ["tight"] * (WALLET_BLOCK // 2) + ["ample"] * (WALLET_BLOCK // 2)
-    random.Random(f"wallet:{seed}:{block}").shuffle(labels)
-    label = labels[position]
-    assert label in WALLETS
-    return label
+    block, position = divmod(repetition - 1, BLOCK)
+    cells = [cell for cell, count in _CELL_COUNTS.items() for _ in range(count)]
+    assert len(cells) == BLOCK
+    random.Random(f"assignment:{seed}:{block}").shuffle(cells)
+    wallet, mode = cells[position]
+    return RunAssignment(wallet=wallet, payment_mode=mode)
 
 
 def episode_plans(repetition: int, seed: int) -> list[EpisodePlan]:
