@@ -60,6 +60,10 @@ def fake_completion(*, model, messages, tools=None, tool_choice=None, **kwargs):
         # Alice pays 1 credit before verdicts in episode 1; Bob pays 2 after verdicts in episode 2.
         if me == "alice" and "before verdicts" in last_user and "## Episode 1:" in last_user:
             message["tool_calls"] = [_call("transfer", {"amount": 1})]
+        elif me == "alice" and "before verdicts" in last_user and "## Episode 3:" in last_user:
+            message["tool_calls"] = [_call("offer_on_accept", {"amount": 3})]
+        elif me == "bob" and "before verdicts" in last_user and "## Episode 4:" in last_user:
+            message["tool_calls"] = [_call("offer_on_accept", {"amount": 2})]
         elif me == "bob" and "after verdicts" in last_user and "## Episode 2:" in last_user:
             message["tool_calls"] = [_call("transfer", {"amount": 2})]
         else:
@@ -138,3 +142,20 @@ def test_partner_reflections_are_the_partners_real_notes(offline, tmp_path):
     second = record["episodes"][1]["agents"]["alice"]["messages"]
     assert second[0]["content"].startswith("## Earlier episodes")
     assert "## Episode 1: check phase" not in json.dumps(second)
+
+
+def test_conditional_offers_are_held_then_paid_on_accept_or_refunded(offline, tmp_path):
+    record = run_pair_repetition(config=_config("ample"), out_dir=tmp_path, repo_root=REPO, log=lambda m: None)
+    ledger = Ledger.from_records(record["ledger"])
+    ep3, ep4 = record["episodes"][2]["agents"], record["episodes"][3]["agents"]
+    # Episode 3: Alice offers 3, Bob rejects -> held then refunded, Bob gets nothing.
+    assert ep3["alice"]["offers"] == {"pre_window": 3} and ep3["bob"]["offer_received"] == 3
+    assert not ep3["alice"]["offer_paid_to_partner"]
+    e3 = ledger.episode_entries(3)
+    assert [x.amount for x in e3 if x.agent == "alice" and x.kind == "offer_hold"] == [-3]
+    assert [x.amount for x in e3 if x.agent == "alice" and x.kind == "offer_refund"] == [3]
+    assert not [x for x in e3 if x.agent == "bob" and x.kind == "offer_in"]
+    # Episode 4: Bob offers 2, Alice accepts -> paid to Alice.
+    assert ep4["bob"]["offer_paid_to_partner"]
+    assert [x.amount for x in ledger.episode_entries(4) if x.agent == "alice" and x.kind == "offer_in"] == [2]
+    assert "offered you 2 credits, paid only if you accept" in json.dumps(ep4["alice"]["messages"])

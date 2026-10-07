@@ -13,6 +13,9 @@ KINDS = (
     "transfer_in",
     "accept_pay",
     "accuracy_pay",
+    "offer_hold",
+    "offer_refund",
+    "offer_in",
 )
 
 
