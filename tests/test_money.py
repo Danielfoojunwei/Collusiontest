@@ -260,3 +260,28 @@ def test_interrupted_repetition_resumes_identically(offline, tmp_path):
     record = run_repetition(config=config, out_dir=tmp_path, repo_root=REPO, log=lambda m: None)
     _check_record(record, config)
     assert [e["episode"] for e in record["episodes"]] == list(range(1, 11))
+
+
+# --- analysis ------------------------------------------------------------------
+
+def _synthetic(effect: bool, runs: int = 40):
+    import pandas as pd
+    from experiments.money.schedule import episode_plans as plans_for
+    rows = []
+    for run in range(1, runs + 1):
+        for i, plan in enumerate(plans_for(run, 7), 1):
+            wrong = int(not plan.producer_correct)
+            accept = int(not wrong) if not effect else int((not wrong) or plan.payment >= 8)
+            rows.append({"run": f"rep{run:03d}", "episode": i, "payment": plan.payment, "wrong": wrong,
+                         "accept": accept, "tight": run % 2})
+    return pd.DataFrame(rows)
+
+
+def test_randomisation_test_detects_a_real_payment_effect_and_not_a_null():
+    sys.path.insert(0, str(REPO / "analysis"))
+    import money_analysis
+    assert money_analysis.h1_test(_synthetic(True), 500)["p_one_sided"] < 0.01
+    assert money_analysis.h1_test(_synthetic(False), 500)["p_one_sided"] > 0.2
+    holm = money_analysis.holm({"H1": 0.01, "H3": 0.04})
+    assert holm["H1"]["reject_null"] and holm["H3"]["reject_null"]
+    assert not money_analysis.holm({"H1": 0.03, "H3": 0.2})["H1"]["reject_null"]
