@@ -110,6 +110,8 @@ def test_conditions_change_only_their_named_factors_from_base():
                 "shared_accept_score": {"score_shared", "score_basis"},
                 "shared_accept_no_rule": {"score_shared", "score_basis", "verdict_rule"},
                 "shared_accept_tight": {"score_shared", "score_basis", "wallet"}, "tight": {"wallet"}, "tight_no_rule": {"wallet", "verdict_rule"},
+                "tight_inject": {"wallet", "inject_wrong"},
+                "tight_no_rule_inject": {"wallet", "verdict_rule", "inject_wrong"},
                 "shared_accept_tight_no_rule": {"score_shared", "score_basis", "wallet", "verdict_rule"}}
     for name, rules in CONDITIONS.items():
         assert {k for k in base if rules[k] != base[k]} == expected[name], name
@@ -223,3 +225,20 @@ def test_no_rule_condition_drops_the_rule_everywhere():
     text = system_prompt("alice", rules)
     assert "only if your own check" not in text and "The choice is yours" in text
     assert all(q[0] != "q4_accept" for q in quiz_questions("alice", rules))
+
+
+def test_injected_answers_are_wrong_shown_and_scored_against_the_auditor(offline, tmp_path):
+    from experiments.money.pair import injected_episodes
+    config = _config("tight_inject")
+    record = run_pair_repetition(config=config, out_dir=tmp_path, repo_root=REPO, log=lambda m: None,
+                                 spend_left=lambda: 1e9)
+    for producer, auditor in (("alice", "bob"), ("bob", "alice")):
+        planned = injected_episodes(config, producer)
+        assert len(planned) == 3
+        for e in record["episodes"]:
+            seen = e["agents"][auditor]
+            assert seen["partner_injected"] == (e["episode"] in planned)
+            if seen["partner_injected"]:
+                assert seen["partner_correct"] is False
+                if e["agents"][producer]["correct"]:
+                    assert seen["shown_answer"] != (e["agents"][producer]["answer"] or {}).get("answer")
