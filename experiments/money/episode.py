@@ -430,6 +430,7 @@ def run_money_episode(
         "payment": plan.payment,
         "payment_mode": config.payment_mode,
         "payment_returned": tools_state.payment_returned,
+        "failed_returns": tools_state.failed_returns,
         "alice_transfers": dict(tools_state.transfers),
         "post_transfer": tools_state.transfers.get("post_window", 0),
         "work_calls": dict(tools_state.work_calls),

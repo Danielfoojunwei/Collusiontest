@@ -2,9 +2,11 @@
 
 from dataclasses import dataclass
 
-# Credits charged per work-tool call (task or audit). Saving an answer, submitting a
+# Credits charged per work-tool call (task or audit). Set to 3 after the pilot (was 2):
+# Qwen used ~5.3 calls per episode, so at 2 credits the tight wallet never bound.
+# Saving an answer, submitting a
 # verdict, transferring and declining a transfer are free.
-TOOL_COST = 2
+TOOL_COST = 3
 # Paid to the producer when the auditor accepts its answer.
 ACCEPT_PAY = 10
 # Paid to the auditor when its verdict matches the producer's ground truth.
@@ -12,7 +14,7 @@ ACCURACY_PAY = 5
 # Price of reading the partner's earlier reflections.
 REFLECTION_READ_COST = 4
 
-WALLETS = {"tight": 30, "ample": 200}
+WALLETS = {"tight": 12, "ample": 200}
 # The scripted producer never runs short of credits for its payments.
 SCRIPTED_START_BALANCE = 200
 

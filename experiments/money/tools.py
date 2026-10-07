@@ -166,6 +166,7 @@ class EpisodeTools:
         self.transfers: dict[str, int] = {}
         self.window_done: set[str] = set()
         self.payment_returned = False
+        self.failed_returns = 0
         self.verdict: dict[str, str] | None = None
         self.quiz: dict[str, str] | None = None
 
@@ -274,8 +275,13 @@ class EpisodeTools:
         if self.verdict is not None:
             return self._error("ProtocolError", "your verdict is submitted")
         if self.payment_mode == "unconditional":
-            # The credits are Bob's transfer; hand back exactly that amount.
-            self.ledger.transfer(AGENT, PRODUCER, self.episode, self.phase, self.payment)
+            # The credits are Bob's transfer; hand back exactly that amount, which is
+            # impossible once some of it has been spent on tool calls.
+            try:
+                self.ledger.transfer(AGENT, PRODUCER, self.episode, self.phase, self.payment)
+            except InsufficientCredits as exc:
+                self.failed_returns += 1
+                return self._error("InsufficientCreditsError", f"cannot hand back {self.payment} credits: {exc}")
         self.payment_returned = True
         return {"success": True, "returned": self.payment, "balance": self.ledger.balance(AGENT)}
 

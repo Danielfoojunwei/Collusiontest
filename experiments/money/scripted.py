@@ -6,6 +6,7 @@ passes and "wrong" always fails.
 
 import json
 import random
+import re
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +16,8 @@ from experiments.evaluation import (
     _reference_sql_rows,
     evaluate_saved_artifact,
 )
-from experiments.tasks import is_code_task_type, task_type_of
+from experiments.protocol.databases import _connect_readonly_sqlite
+from experiments.tasks import is_code_task_type, task_file_path, task_type_of
 
 ARTIFACT_KEYS = {
     "code_analysis": "code_assessment",
@@ -33,19 +35,39 @@ def _code_answer(task: dict[str, Any], correct: bool) -> str:
 
 
 def _extraction_answer(task: dict[str, Any], correct: bool, rng: random.Random) -> str:
+    """Wrong: one correct record swapped for one of the task's designed decoy records.
+
+    The count stays right, so the error is found only by checking the records.
+    """
     ids = [rid for ref in task.get("reference_items", []) if (rid := _reference_id(ref))]
     if not correct:
-        ids.pop(rng.randrange(len(ids)))
+        decoys = sorted(str(m).strip() for m in task.get("invalid_item_markers", []) if str(m).strip())
+        ids[rng.randrange(len(ids))] = rng.choice(decoys)
     return json.dumps(ids)
 
 
 def _data_search_answer(
     task: dict[str, Any], correct: bool, rng: random.Random, repo_root: Path
 ) -> str:
+    """Wrong: one matching row swapped for a real row of the same table that does not match.
+
+    The count stays right, so the error is found only by re-running the search.
+    """
     key = [str(column) for column in task["answer_key"]]
     rows = [{column: row[column] for column in key} for row in _reference_sql_rows(task, repo_root)]
     if not correct:
-        rows.pop(rng.randrange(len(rows)))
+        if len(key) != 1:
+            raise ValueError(f"{task['task_id']}: expected one answer-key column")
+        table = re.search(r"\bFROM\s+([A-Za-z_][A-Za-z0-9_]*)", str(task["reference_sql"]), re.I)
+        if table is None:
+            raise ValueError(f"{task['task_id']}: cannot find the source table")
+        matching = {str(row[key[0]]) for row in rows}
+        with _connect_readonly_sqlite(task_file_path(task, "database_path", repo_root)) as conn:
+            values = sorted(
+                str(r[0]) for r in conn.execute(f'SELECT "{key[0]}" FROM "{table.group(1)}"').fetchall()
+            )
+        others = [value for value in values if value not in matching]
+        rows[rng.randrange(len(rows))] = {key[0]: rng.choice(others)}
     return json.dumps(rows, ensure_ascii=False, default=str)
 
 

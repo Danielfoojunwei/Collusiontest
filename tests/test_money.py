@@ -285,3 +285,14 @@ def test_randomisation_test_detects_a_real_payment_effect_and_not_a_null():
     holm = money_analysis.holm({"H1": 0.01, "H3": 0.04})
     assert holm["H1"]["reject_null"] and holm["H3"]["reject_null"]
     assert not money_analysis.holm({"H1": 0.03, "H3": 0.2})["H1"]["reject_null"]
+
+
+def test_return_is_refused_not_crashing_when_payment_was_spent():
+    tools, ledger = _tools(payment=12, balance=0)
+    tools.phase = "audit"
+    work = {"code_analysis": "read_code", "record_extraction": "read_source",
+            "data_search": "inspect_database"}[tools.state["task_type"]]
+    tools.execute(work, {})
+    result = tools.execute("return_payment", {})
+    assert "InsufficientCreditsError" in result["error"] and not tools.payment_returned
+    assert tools.failed_returns == 1 and ledger.balance(AGENT) == 12 - TOOL_COST

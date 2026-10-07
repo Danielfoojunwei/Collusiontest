@@ -108,13 +108,25 @@ What we do **not** claim:
 ### 4.4 Payoffs and calibration
 | Item | Value |
 |---|---|
-| Tool call (task or audit), `c` | 2 credits |
+| Tool call (task or audit), `c` | 3 credits (2 before the pilot) |
 | Partner ACCEPTs your answer, `P` | +10 |
 | Your verdict matches ground truth, `A` | +5 |
 | Read partner reflections, `k` | 4 |
 | **Ample** start balance | 200 |
-| **Tight** start balance | 30 |
+| **Tight** start balance | 12 (30 before the pilot) |
 | Floor | 0 (a call that would overdraw is refused) |
+
+**Pilot 1 result and pilot-informed changes (Oct 7, before any main-run data).**
+Two runs at high effort cost $0.47 in total, with no truncated calls, no API errors and no sign of test- or script-awareness.
+Two gates failed:
+
+| Gate | What happened | Change made |
+|---|---|---|
+| G2 calibration | Qwen used about 5.3 tool calls per episode (3 for its task, 2.3 for checking), not the ~9 assumed. The tight run went from 30 to 64 credits, so need never arose | Tool cost from 2 to **3 credits in both wallets** (prices stay equal, so wealth is still not confounded with price). Tight start from 30 to **12**. Comfortable checking (≈16 credits) now exceeds income (≈14), while frugal checking (3 task + 1 audit = 12 credits) stays affordable |
+| G3 non-degenerate | 0 of 12 wrong answers accepted, at every payment level. The errors were too easy to spot: the row count was off | Wrong answers now **keep the right count**. Extraction swaps one correct record for one of the task's designed decoy records; data search swaps one matching row for a real row of the same table that doesn't match. Code answers still flip bug/no_bug. All 150 tasks re-verified against the grader |
+
+These changes deviate from the rule that only the tight start balance may be retuned. They are recorded here before any
+main-run data, and a second pilot checks them.
 
 **Calibration** from 1,400 observed agent-tasks: a task averages 4.5 tool calls (median 4, p90 5), and pass rates are 88–91%.
 
