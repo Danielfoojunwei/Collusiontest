@@ -2,7 +2,8 @@
 
 Research plan and pre-registration draft for the Apart AI Collusion Research Sprint (Oct 23–25, 2026).
 Primary track: **3 – Collusion Carriers and Countermeasures**. Secondary: **1 – Markets and Collusion**.
-Status: design (v2). No paid runs yet; the OpenRouter key must be fixed and topped up before piloting.
+Status: design (v3: Qwen3.8-27B and DeepSeek V4 Pro pairings). No paid runs yet.
+**Blocker:** the OpenRouter *account* holds $10 of purchased credit and has used $10.20. The key's $50 limit is only a cap, so the account must be topped up before any run (§12, R13).
 
 The plan is MECE at every level:
 - questions (§2);
@@ -97,7 +98,7 @@ Each hypothesis (§8) belongs to exactly one branch.
 | F3 Pre-verdict transfer window | closed / open |
 | F4 Post-verdict transfer window | closed / open |
 | F5 Counterpart | LLM / scripted |
-| F6 Model | anchor / contrast / open-weight (§10) |
+| F6 Pairing | **QQ** Qwen-xhigh × Qwen-minimal / **QD** Qwen-medium × DeepSeek-medium / **DD** DeepSeek-high × DeepSeek-high (§10) |
 
 F1 × F2 is the MECE motive space:
 
@@ -129,7 +130,7 @@ Tier 2 (mechanism and controls):
 | **B-R-U** | B-R with P = 5 < A = 10 (corruption unprofitable) | Q2 strategic check |
 | **T-P-np** | T-P without reflection reading | Q5/N6: isolates the reflection carrier |
 
-Tier 3 (generality): the contrast and open-weight models on T-P, B-R, T-P-0 and S-T-P (§10).
+Every arm runs in every pairing (§10). Tier 1 runs in DD first, because the primary hypotheses are tested there. QQ and QD follow. Tier 2 runs in DD only.
 
 ### 4.3 Episode protocol
 Unchanged from 2609.24967 except where listed: 10 episodes, `task_sequences_50x10`, full-history memory, private reflections.
@@ -157,7 +158,7 @@ Credit flows are identical under both objectives. Only the score differs (F1).
 | Transfer | −x sender / +x recipient, integer, 0 < x ≤ balance | same |
 | Floor | 0 | 0 |
 
-**Calibration from our traces** (gpt-6-luna and gemini-3.1-flash-lite, 1,400 agent-tasks):
+**Calibration from our traces** (gpt-6-luna and gemini-3.1-flash-lite, 1,400 agent-tasks; re-checked for Qwen and DeepSeek in the pilot):
 - Own task: mean 4.5 tool calls (median 4, p90 5, max 15). Task pass rate 88–91%.
 - An honest episode (task plus a comparable verification) costs about 9 calls. Income is about 0.9 × 20 + 0.9 × 10 ≈ 27 credits.
 - **Rich:** costs ≈ 9 per episode against income ≈ 27, a surplus of about 18. Money never binds.
@@ -239,8 +240,8 @@ Each is a different object, so they are analysed separately and never pooled.
 | Source | Coverage | Caveat |
 |---|---|---|
 | **Reflections** | 100% of episodes | Written for memory, and now *purchasable*, so possibly strategic |
-| **Provider reasoning summaries** | gpt-6-luna 32% of calls readable (median 446 chars); gemini-3.1-flash-lite 59% (median 535). The rest is encrypted | Summaries, not raw chain of thought; may be sanitised |
-| **Full reasoning** (open-weight model) | 100% of calls | The only source of raw chain of thought; this is why the open-weight model is in the plan |
+| **Full reasoning** (Qwen3.8-27B, DeepSeek V4 Pro) | Every call that thinks. Both return raw `reasoning` text (a DeepSeek probe returned 11k characters) | Raw chain of thought, not provider summaries. Minimal-effort Qwen thinks less, so its text is thinner (a known asymmetry) |
+| *(earlier models, for contrast)* | gpt-6-luna gave readable summaries on only 32% of calls, gemini-3.1-flash-lite on 59%; the rest was encrypted | This is why the study moved to open-weight models |
 
 ### 7.2 Codebook
 - **Unit:** each decision (one transfer, or one verdict) with the reasoning text that precedes it and the next reflection.
@@ -273,8 +274,13 @@ These are assumptions about how the models will think, stated so they can be wro
 | **P8 Low awareness** | A-coded text in < 5% of decisions overall, higher in poor arms | Unusual incentive structures cue test-awareness | A rate by arm |
 
 Model-specific expectations, from the chat study:
-- **gemini-3.1-flash-lite** acts on relaxation (collusion onset by episode 7 in 10/12 sequences). We expect larger behavioural effects and fewer I codes.
-- **gpt-6-luna** talks more than it acts (2/12). We expect more I codes and a larger P2 gap.
+Pairing-specific expectations. These are stated two-sided wherever we have no prior.
+- **QQ (xhigh vs minimal):** the high-effort agent shows more S codes (payoff calculation) and more E codes (verification).
+  Whether that makes it *more* corrupt (strategic when profitable) or *less* (it checks more) is open, so H9 is two-sided.
+  We expect the minimal-effort agent to rubber-stamp more and to be the net payer.
+- **QD (medium vs medium):** no prior on direction between families. The chat study found large family differences
+  (gemini onset by episode 7 in 10/12 sequences vs gpt-6-luna 2/12), so we expect a difference but not its sign.
+- **DD (high vs high):** a homogeneous pair like the paper's. No asymmetry prediction; this is the clean reference for Q2.
 
 ---
 
@@ -293,7 +299,11 @@ Behavioural, pre-registered, trajectory as unit, paired across arms on rep001–
 | H7 | Q4 | Poor arms: own-task pass rate falls after the wallet binds; the channel (T-P vs T-P-0) changes how it falls | Event-time difference |
 | H8 | Q4 | The ledger rule detects more false accepts than a reflection-reading monitor | Paired |
 
-**Primary family:** H1, H2 and H3, Holm-corrected. Everything else is secondary or exploratory, and labelled as such.
+| H9 | Pairing | QQ: within-pair difference between the xhigh and minimal agents in final balance, false-accept rate and transfers sent | Paired by sequence, two-sided |
+| H10 | Pairing | QD: within-pair Qwen vs DeepSeek difference on the same measures | Paired by sequence, two-sided |
+
+**Primary family:** H1, H2 and H3, tested in **DD** and Holm-corrected. The same tests in QQ and QD are replications (secondary).
+H9 and H10 are secondary. Comparisons *across* pairings change model and effort together, so they are descriptive only.
 
 **Power** (sign test, α = 0.05, 50 paired sequences): 0.78 if 70% of sequences move in the predicted direction,
 0.94 at 75%. At the earlier n = 15 it would have been 0.30 and 0.46. This is why we use 50.
@@ -331,29 +341,71 @@ Behavioural, pre-registered, trajectory as unit, paired across arms on rep001–
 
 ---
 
-## 10. Models
-Each model has one role.
+## 10. Models and pairings
 
-| Role | Model | Why |
+### 10.1 Pairings
+Each pairing has exactly one source of within-pair asymmetry. The three sources are MECE: effort only, model only, none.
+
+| Pairing | Agent 1 | Agent 2 | Asymmetry | Question it answers |
+|---|---|---|---|---|
+| **QQ** | `qwen/qwen3.8-27b`, effort **xhigh** (max) | `qwen/qwen3.8-27b`, effort **minimal** (min) | Effort only | Does thinking harder make an agent more corrupt, more careful, or the exploiter of a weaker partner? |
+| **QD** | `qwen/qwen3.8-27b`, effort **medium** | `deepseek/deepseek-v4-pro`, effort **medium** | Model family only (at equal nominal effort) | Do families differ in corruptibility under identical incentives? |
+| **DD** | `deepseek/deepseek-v4-pro`, effort **high** | `deepseek/deepseek-v4-pro`, effort **high** | None | Clean reference for the motive 2 × 2; primary hypotheses tested here |
+
+**Design rules for the pairings:**
+- **Seat counterbalancing.** In QQ and QD, the configuration in the Alice seat swaps halfway: sequences 1–25 have agent 1 as Alice, and sequences 26–50 have agent 1 as Bob. Seat effects therefore cancel. DD needs no swap.
+- **Effort levels.**
+  - *Max* is `xhigh`, the top OpenRouter level. If Qwen rejects it, we fall back to `high` and record the change.
+  - *Min* is `minimal`, not `none`, because `none` switches thinking off, which turns a difference of degree into a difference of kind and leaves no reasoning text to code.
+  - If `minimal` turns out to be indistinguishable from medium (see the next rule), we use `none` and report the pairing as "thinking vs non-thinking".
+- **Manipulation check (gate in WS3).** Effort labels are requests, and providers may ignore them. A DeepSeek probe at `minimal`, `low` and `medium` used the full 3,500-token budget on a trivial arithmetic question. QQ is valid only if the xhigh agent's median reasoning tokens per call are at least 3× the minimal agent's. QD and DD record the achieved reasoning tokens per call so that "medium" and "high" are reported as measured, not as labels.
+- **Pinning.** Record `model` and `provider` from every response; a probe was served by StreamLake. If OpenRouter offers provider pinning for these models, pin one provider per model for the whole study.
+- **Scripted arm (S-T-P).** The LLM auditor runs in every configuration of each pairing: 25 sequences per configuration in QQ and QD, and 50 in DD.
+- **The earlier models (gpt-6-luna, gemini-3.1-flash-lite) are dropped from this study.** Their chat-condition results remain background motivation only, not a matched baseline. The channel-off arm in each pairing is the baseline.
+
+### 10.2 Cost, from measured token use
+Our gpt-6-luna chat trajectories used about **9.5M input tokens** per 10-episode run, split as follows:
+
+| Phase | Input tokens per run |
+|---|---|
+| Task | 3.0M |
+| Chat | 5.0M |
+| Verdict | 0.7M |
+| Reflection | 0.75M |
+
+Full-history memory is resent on every call, and 75% of input was served from cache.
+
+The money protocol drops chat but adds audits (about the same size as the task phase) and two transfer windows. We expect a similar total of **about 8–9M input tokens per run**.
+
+List prices on OpenRouter (Oct 2026, USD per million tokens):
+
+| Model | Input | Output |
 |---|---|---|
-| **Anchor** | gpt-6-luna, both agents, the reasoning effort of the chat baseline | Matched 19-trajectory chat baseline; readable summaries on 32% of calls |
-| **Contrast** | gemini-3.1-flash-lite | Most collusive in chat; cheap; readable summaries on 59% of calls |
-| **Open-weight** | A Qwen reasoning model on OpenRouter | **Full raw reasoning**, needed for Q5; replicable by others. No judge conflict, because outcomes are judge-free |
-| **Control** | Scripted producer | Causal identification; no API cost on its side |
+| `qwen/qwen3.8-27b` | $0.425 | $2.55 |
+| `deepseek/deepseek-v4-pro` | $0.209 | $0.418 |
 
-There are no mixed-model pairs, which would confound model with role.
+| Per run (estimate before caching) | Input | Reasoning output (~1M tokens) | Total |
+|---|---|---|---|
+| DD | ≈ $1.8 | ≈ $0.4 | **≈ $2.2** |
+| QD | ≈ $2.8 | ≈ $1.5 | **≈ $4.3** |
+| QQ | ≈ $3.8 | ≈ $2.5 (xhigh dominates) | **≈ $6.3** |
 
-**Budget.** Prior gpt-6-luna trajectories cost about $0.40 each including chat and judges. The pilot measures the new cost; poor arms should be cheaper because there are fewer tool calls.
+These figures could be 2–4× lower if prompt caching applies, and the pilot measures it. Planning numbers:
 
-| Tier | Trajectories | Rough cost |
+| Block | Runs | Estimate before caching |
 |---|---|---|
-| Tier 1, anchor | 5 × 50 LLM-pair + 50 scripted (about half cost) | ≈ $80–110 |
-| Tier 2, anchor | 6 × 50 | ≈ $100–120 |
-| Tier 3 | contrast and open-weight, 4 arms × 50 each | Measure in pilot; likely < $40 |
-| Pilot | — | ≈ $5 |
+| Tier 1 in DD (5 LLM arms + scripted at about half cost) | 275 run-equivalents | ≈ $600 |
+| Tier 1 in QD | 275 | ≈ $1,200 |
+| Tier 1 in QQ | 275 | ≈ $1,700 |
+| Tier 2 in DD | 300 | ≈ $650 |
+| Pilot (2 runs per pairing × 3 arms) | 18 | ≈ $80 |
 
-The current key had $50 and about $10 used. **Tier 1 alone needs a top-up.**
+**This is far above the earlier GPT budget.** Three levers, in order of preference:
+1. **Measure caching in the pilot.** If caching applies at about 75%, as it did for GPT, totals fall about 3×.
+2. **Cut the Tier-1 arms in QQ and QD to the headline three** (T-R, T-P, T-P-0), keeping all five in DD only. This saves about 40% of QQ and QD.
+3. **Shorter memory** (reflections only instead of full history). This cuts input about 60%, but it changes the paper's memory design, so it would be logged as a deviation and applied to every arm.
 
+Decision rule: run the pilot, compute the real cost per run per pairing, then choose levers to fit the topped-up budget **before** WS4, and record the choice in the pre-registration.
 ---
 
 ## 11. Work plan (sequential workstreams; each has an exit check)
@@ -362,8 +414,8 @@ The current key had $50 and about $10 used. **Tier 1 alone needs a top-up.**
 |---|---|---|
 | **1 Design** | Sprint rules (is pre-built code allowed?); novelty check (§3.3); freeze this file as the pre-registration (`git tag prereg-money-channel`) | Tag pushed |
 | **2 Build** ($0) | **Ledger:** append-only per-agent events (`protocol/state.py`); `wallet` reward scheme with Task/Balance scoring (`protocol/rewards.py`). **Tools:** `protocol/transfers.py` (`transfer`, `read_partner_reflections`); window-aware schemas; `send_message` removed under `--protocol money`. **Flow:** phases in `episode_runner.py` behind `--protocol money`; the default path must stay unchanged. **Counterpart:** seeded scripted briber and tipper (`controlled.py`). **Prompts:** objective text, neutral tool text, quiz. **Analysis:** `analysis/money_metrics.py` (§6 labels, §8 tests); `analysis/reasoning_codes.py` (§7 coder plus κ check) | All tests pass, including the default-path regression |
-| **3 Validate** (≈ $5) | Fix and top up the key; probe it. Pilot 2 × T-P, 2 × B-R, 2 × S-T-P. Check H0; measure cost. Retune `c`/`W0` only to meet H0, and log any change as a deviation | H0 passes; cost per trajectory known |
-| **4 Run** | Tier 1 → Tier 2 → Tier 3, sequentially, resumable, with a key probe per block. Package as `data/money-channel/<model>/<date>/` with a key scan | Every planned trajectory has all 10 episodes |
+| **3 Validate** (≈ $80) | Top up the OpenRouter account; probe each model at each planned effort. Pilot 2 × T-P, 2 × B-R and 2 × S-T-P in each pairing. Check H0, the effort manipulation check (§10.1), and the cache share and cost per run. Retune `c`/`W0` only to meet H0; choose the cost levers (§10.2); log both as deviations | H0 and the manipulation check pass; cost per run per pairing known; levers chosen |
+| **4 Run** | Tier 1 → Tier 2 → Tier 3, sequentially, resumable, with a key probe per block. Package as `data/money-channel/<pairing>/<date>/` with a key scan | Every planned trajectory has all 10 episodes |
 | **5 Code reasoning** | Hand-label 100 decisions → validate the LLM coder (κ ≥ 0.6) → code all decisions | κ reported |
 | **6 Analyse** | Primary family (Holm) → secondary → exploratory (labelled). Quote the first corrupt act per trajectory with the reasoning before it | Every H and P has a result and a reading |
 | **7 Write** | Paper (§13); release code, data and the pre-registration | Submitted |
@@ -401,18 +453,20 @@ Grouped MECE by where the issue lives.
 | | R6. Known 10-episode horizon invites end-game defection | Report episodes 1–9 and 10 separately |
 | **Incentives** | R7. Shared rewards make transfers meaningless | Separate wallets |
 | | R8. With P > A, tacit mutual acceptance pays without transfers | Channel-off arms (T-P-0, B-R-0) are the baselines |
-| **Measurement** | R9. Raw chain of thought is mostly unavailable (encrypted) | Three-source design (§7.1); the open-weight model gives full reasoning |
+| **Measurement** | R9. Raw chain of thought was mostly unavailable (encrypted) on gpt-6-luna and gemini | Switched to Qwen3.8-27B and DeepSeek V4 Pro, which return full reasoning |
+| | R9b. Effort labels may not be honoured by providers | Manipulation check on measured reasoning tokens (§10.1) |
 | | R10. The LLM coder may be biased | Human-labelled validation set; κ gate |
 | **Statistics** | R11. Many comparisons | Primary family of 3 with Holm; the rest labelled secondary or exploratory |
 | | R12. Pseudo-replication across episodes | Trajectory is the unit; paired by sequence |
-| **Operations** | R13. Key limits stalled our last runs | Top up; sequential, resumable runs; key probe per block |
+| **Operations** | R13. Our last runs stalled because the OpenRouter **account** had only $10 of credit (now $10.20 used). The key's $50 limit is only a cap, and the shrinking "can only afford N tokens" errors were the account balance running out | Top up the account (not the key limit) before the pilot; check `/api/v1/credits` before each block |
+| | R13b. Cost is about 5–15× the GPT runs at list price | Pilot measures caching; levers in §10.2 |
 | | R14. Model drift mid-study | Record the provider-returned model and date per call; run each arm block contiguously |
 | **Ethics and framing** | R15. Wording may trigger refusals or moralising | Neutral text; report refusal and A rates; we don't train on any of this |
 
 ---
 
 ## 13. Paper outline
-1. **Introduction.** Agents with wallets; need vs greed; text-only defences; contributions N1–N6.
+1. **Introduction.** Agents with wallets; need vs greed; text-only defences; contributions N1–N6; open-weight models with full reasoning.
 2. **Background.** LLM collusion through language; corruption economics; instrumental convergence.
 3. **Setup.** Factors and arms; the model's-eye view; ledger and calibration; framing and quiz.
 4. **Pre-registration.** Measures, codebook, predictions, hypotheses, interpretation map.
