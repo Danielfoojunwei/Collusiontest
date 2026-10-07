@@ -109,7 +109,8 @@ def test_conditions_change_only_their_named_factors_from_base():
                 "shared_score": {"score_shared"}, "accept_score": {"score_basis"},
                 "shared_accept_score": {"score_shared", "score_basis"},
                 "shared_accept_no_rule": {"score_shared", "score_basis", "verdict_rule"},
-                "shared_accept_tight": {"score_shared", "score_basis", "wallet"}}
+                "shared_accept_tight": {"score_shared", "score_basis", "wallet"}, "tight": {"wallet"},
+                "shared_accept_tight_no_rule": {"score_shared", "score_basis", "wallet", "verdict_rule"}}
     for name, rules in CONDITIONS.items():
         assert {k for k in base if rules[k] != base[k]} == expected[name], name
 

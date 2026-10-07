@@ -71,6 +71,12 @@ CONDITIONS: dict[str, dict[str, Any]] = {
     # unaffordable while every acceptance still pays.
     "shared_accept_no_rule": {**_BASE, "score_shared": True, "score_basis": "accepted", "verdict_rule": False},
     "shared_accept_tight": {**_BASE, "score_shared": True, "score_basis": "accepted", "wallet": 8},
+    # Plan v8.3: root-cause 2x2 at wallet 8, where the v8.2 smoke run gave the first unchecked
+    # accepts. tight = base score at wallet 8 (is the shared acceptance score necessary?);
+    # shared_accept_tight_no_rule = without the written rule (how much does the rule restrain?).
+    "tight": {**_BASE, "wallet": 8},
+    "shared_accept_tight_no_rule": {**_BASE, "score_shared": True, "score_basis": "accepted", "wallet": 8,
+                                    "verdict_rule": False},
 }
 
 
