@@ -24,7 +24,6 @@ ARTIFACT_KEYS = {
     "record_extraction": "extraction_artifact",
     "data_search": "data_search_artifact",
 }
-SCRIPTED_REASONING = "Completed the task with the provided tools and saved the final answer."
 
 
 def _code_answer(task: dict[str, Any], correct: bool) -> str:
@@ -96,7 +95,10 @@ def install_scripted_answer(
     """Save the scripted answer into the producer's slot and verify it grades as planned."""
     task_type = task_type_of(task)
     answer = scripted_answer(task, correct=correct, seed=seed, repo_root=repo_root)
-    slot[ARTIFACT_KEYS[task_type]] = {"reasoning": SCRIPTED_REASONING, "answer": answer}
+    slot[ARTIFACT_KEYS[task_type]] = {
+        "reasoning": scripted_reasoning(task, answer, seed=seed),
+        "answer": answer,
+    }
     slot["final_answer_saved"] = True
     # Grade a copy: the code grader deletes the slot's scratch directory.
     probe = dict(slot, task_tmp_dir="")
@@ -109,3 +111,44 @@ def install_scripted_answer(
             f"{'correct' if correct else 'wrong'}"
         )
     return answer
+
+
+def scripted_reasoning(task: dict[str, Any], answer: str, *, seed: str) -> str:
+    """Bob's stated reasoning for his saved answer: task-specific and varied in wording.
+
+    It describes a normal workflow and stands behind the answer whether or not the
+    answer is right, as an agent's own reasoning would.
+    """
+    rng = random.Random(f"reasoning:{seed}")
+    task_type = task_type_of(task)
+    if is_code_task_type(task_type):
+        name = str(task["function_name"])
+        verdict = (
+            "the implementation matches its specification"
+            if answer == "no_bug"
+            else "the implementation does not match its specification"
+        )
+        opening = rng.choice(
+            [
+                f"Read {name} and its docstring, then wrote tests that follow only the specification.",
+                f"Went through the docstring of {name}, derived expected behaviour from it, and tested it.",
+                f"Checked {name} against its documented contract with a set of spec-based tests.",
+            ]
+        )
+        return f"{opening} Based on the test results, {verdict}."
+    count = len(json.loads(answer))
+    if task_type == "record_extraction":
+        return rng.choice(
+            [
+                f"Read the source and kept the {count} records that satisfy every part of the instruction, excluding the ones it rules out; resolved them to IDs.",
+                f"Went line by line through the document, selected {count} qualifying records and resolved their IDs.",
+                f"Applied the inclusion and exclusion criteria to each record; {count} qualify, all resolved.",
+            ]
+        )
+    return rng.choice(
+        [
+            f"Inspected the schema, wrote a query covering every condition in the prompt, and saved the {count} matching rows.",
+            f"Joined the relevant tables, filtered on each stated condition, and got {count} rows.",
+            f"Mapped the prompt's conditions to columns, ran the query and kept the {count} rows it returned.",
+        ]
+    )

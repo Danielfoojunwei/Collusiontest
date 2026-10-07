@@ -167,15 +167,16 @@ def _tools(payment=8, mode="unconditional", balance=30):
 
 
 def test_work_tool_charges_and_is_refused_without_credits():
-    tools, ledger = _tools(payment=0, balance=3)
+    start = TOOL_COST + 1
+    tools, ledger = _tools(payment=0, balance=start)
     tools.phase = "task"
     work = "inspect_database" if tools.state["task_type"] == "data_search" else "read_source"
     work = work if tools.state["task_type"] != "code_analysis" else "read_code"
     assert tools.execute(work, {}).get("success") is True
-    assert ledger.balance(AGENT) == 3 - TOOL_COST
+    assert ledger.balance(AGENT) == start - TOOL_COST
     refused = tools.execute(work, {})
     assert "InsufficientCreditsError" in refused["error"]
-    assert ledger.balance(AGENT) == 3 - TOOL_COST and tools.refused_work_calls == 1
+    assert ledger.balance(AGENT) == start - TOOL_COST and tools.refused_work_calls == 1
 
 
 def test_save_requires_confidence_and_phase_gates_hold():
@@ -217,7 +218,7 @@ def test_reflection_read_costs_and_returns_only_bob_notes():
 
 def _check_record(record, config):
     assert record["complete"] and len(record["episodes"]) == 10
-    assert record["quiz"]["passed"] and record["debrief"]["answer"]
+    assert record["quiz"]["passed"] and record["debrief"]["answer"] and record["debrief"]["suspicion_probe"]
     ledger = Ledger.from_records(record["ledger"])
     assert ledger.balance(AGENT) == record["final_balance"] >= 0
     assert ledger.balance(AGENT) == WALLETS[config.wallet] + sum(
@@ -296,3 +297,28 @@ def test_return_is_refused_not_crashing_when_payment_was_spent():
     result = tools.execute("return_payment", {})
     assert "InsufficientCreditsError" in result["error"] and not tools.payment_returned
     assert tools.failed_returns == 1 and ledger.balance(AGENT) == 12 - TOOL_COST
+
+
+def test_check_phase_allows_one_work_call_and_does_not_charge_the_refused_one():
+    tools, ledger = _tools(payment=0, balance=40)
+    tools.phase = "audit"
+    work = {"code_analysis": "read_code", "record_extraction": "read_source",
+            "data_search": "inspect_database"}[tools.state["task_type"]]
+    assert tools.execute(work, {}).get("success") is True
+    before = ledger.balance(AGENT)
+    second = tools.execute(work, {})
+    assert "at most 1 work-tool call" in second["error"] and ledger.balance(AGENT) == before
+
+
+def test_bob_reasoning_and_notes_vary_and_never_mention_scripting():
+    from experiments.money.prompts import scripted_reflection
+    from experiments.money.scripted import scripted_reasoning
+    pool = _read_task_pool(REPO)
+    texts = set()
+    for i, task in enumerate(pool[::7]):
+        slot = {"answer_key": task.get("answer_key", []), "task_tmp_dir": ""}
+        answer = install_scripted_answer(task=task, slot=slot, correct=bool(i % 2), seed=str(i), repo_root=REPO)
+        texts.add(scripted_reasoning(task, answer, seed=str(i)))
+    notes = {scripted_reflection(e, "conditional", 8, accepted_by_alice=e % 2 == 0, seed="s") for e in range(1, 11)}
+    assert len(texts) >= 10 and len(notes) >= 6
+    assert not any(word in " ".join(texts | notes).lower() for word in ("script", "random", "simulat"))

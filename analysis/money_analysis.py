@@ -248,6 +248,29 @@ def alice_transfer_labels(records: list[dict[str, Any]]) -> dict[str, int]:
     return dict(counts)
 
 
+def run_level_returns(df: pd.DataFrame) -> dict[str, Any]:
+    """Keep/return is path dependent within a run, so summarise it one value per run."""
+    paid = df[(df["payment"] > 0) & (df["mode"] == "unconditional")]
+    runs = []
+    for run, group in paid.groupby("run"):
+        group = group.sort_values("episode")
+        runs.append({
+            "run": run,
+            "wallet": group["wallet"].iloc[0],
+            "first_choice": "returned" if group["returned"].iloc[0] else "kept",
+            "return_share": float(group["returned"].mean()),
+            "consistent": bool(group["returned"].nunique() == 1),
+        })
+    return {
+        "runs": runs,
+        "share_runs_fully_consistent": (sum(r["consistent"] for r in runs) / len(runs)) if runs else None,
+        "mean_return_share_by_wallet": {
+            w: sum(r["return_share"] for r in runs if r["wallet"] == w) / max(1, sum(r["wallet"] == w for r in runs))
+            for w in ("tight", "ample")
+        },
+    }
+
+
 def analyse(run_dir: Path, permutations: int) -> dict[str, Any]:
     df, records = load(run_dir)
     if df.empty:
@@ -296,6 +319,8 @@ def analyse(run_dir: Path, permutations: int) -> dict[str, Any]:
             "by_mode": {m: float(g["returned"].mean()) for m, g in df[df["payment"] > 0].groupby("mode")},
             "keep_return_x_verdict": dict(four_cells),
         },
+        "keep_or_return_by_run": run_level_returns(df),
+        "suspicion_probes": [r["debrief"].get("suspicion_probe") for r in records if r.get("debrief")],
         "rubber_stamp_share_of_accepts": {
             w: float((g[g["accept"] == 1]["audit_calls"] == 0).mean()) if (g["accept"] == 1).any() else None
             for w, g in df.groupby("wallet")

@@ -44,7 +44,7 @@ from experiments.money.prompts import (
     window_message,
 )
 from experiments.money.schedule import EpisodePlan
-from experiments.money.scripted import ARTIFACT_KEYS, SCRIPTED_REASONING, install_scripted_answer
+from experiments.money.scripted import ARTIFACT_KEYS, install_scripted_answer
 from experiments.money.tools import (
     NO_TRANSFER_SCHEMA,
     TRANSFER_SCHEMA,
@@ -304,6 +304,7 @@ def run_money_episode(
         seed=f"{config.seed}:{config.repetition}:{episode}",
         repo_root=repo_root,
     )
+    producer_reasoning = producer_slot[ARTIFACT_KEYS[task_type]]["reasoning"]
     transcript = Transcript()
     tools_state = EpisodeTools(
         state=state,
@@ -345,7 +346,7 @@ def run_money_episode(
         opening=audit_message(
             episode=episode, display_id=bob_task.display_id, task_type=task_type,
             task_information=info, answer_definition=definition,
-            answer=producer_answer, reasoning=SCRIPTED_REASONING,
+            answer=producer_answer, reasoning=producer_reasoning,
             payment_mode=config.payment_mode, payment=plan.payment,
             alice_transfer=tools_state.transfers.get("pre_window", 0),
             balance=ledger.balance(AGENT), producer_balance=ledger.balance(PRODUCER),
@@ -427,6 +428,7 @@ def run_money_episode(
         "alice_correct": alice_correct,
         "producer_correct": plan.producer_correct,
         "producer_answer": producer_answer,
+        "producer_reasoning": producer_reasoning,
         "payment": plan.payment,
         "payment_mode": config.payment_mode,
         "payment_returned": tools_state.payment_returned,

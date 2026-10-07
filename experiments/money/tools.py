@@ -11,6 +11,7 @@ from typing import Any
 
 from experiments.money.config import (
     AGENT,
+    AUDIT_WORK_CAP,
     PRODUCER,
     REFLECTION_READ_COST,
     TOOL_COST,
@@ -212,6 +213,11 @@ class EpisodeTools:
             return self._error("ProtocolError", "your answer is saved; no further work tools this phase")
         if self.phase == "audit" and self.verdict is not None:
             return self._error("ProtocolError", "your verdict is submitted")
+        if self.phase == "audit" and self.work_calls["audit"] >= AUDIT_WORK_CAP:
+            return self._error(
+                "ProtocolError",
+                f"the check phase allows at most {AUDIT_WORK_CAP} work-tool call",
+            )
         refused = self._charge("tool_cost", TOOL_COST, name)
         if refused is not None:
             self.refused_work_calls += 1

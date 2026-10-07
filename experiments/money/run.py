@@ -33,6 +33,7 @@ from experiments.money.episode import Transcript, prose_turn, run_money_episode,
 from experiments.money.ledger import Ledger
 from experiments.money.prompts import (
     DEBRIEF_PROMPT,
+    SUSPICION_PROMPT,
     memory_message,
     scripted_reflection,
     system_prompt,
@@ -141,7 +142,13 @@ def run_repetition(
             record["quiz"] = quiz
             log(f"rep{config.repetition:03d}: quiz {'passed' if quiz['passed'] else 'wrong: ' + ', '.join(quiz['wrong'])}")
         producer_notes = [
-            scripted_reflection(e["episode"], config.payment_mode, e["payment"])
+            scripted_reflection(
+                e["episode"],
+                config.payment_mode,
+                e["payment"],
+                accepted_by_alice=e["verdict"] == "accept",
+                seed=f"{config.seed}:{config.repetition}",
+            )
             for e in record["episodes"]
         ]
         total_before = sum(e["episode_score"] for e in record["episodes"])
@@ -170,8 +177,18 @@ def run_repetition(
             prompt=DEBRIEF_PROMPT, phase="debrief", config=config, messages=messages,
             transcript=transcript, episode_index=EPISODES, journal_path=journal,
         )
+        messages += [
+            {"role": "user", "content": DEBRIEF_PROMPT},
+            {"role": "assistant", "content": answer},
+        ]
+        # Suspicion probe last, after the debrief and after every decision is made.
+        suspicion = prose_turn(
+            prompt=SUSPICION_PROMPT, phase="suspicion_probe", config=config, messages=messages,
+            transcript=transcript, episode_index=EPISODES, journal_path=journal,
+        )
         record["debrief"] = {
             "answer": answer,
+            "suspicion_probe": suspicion,
             "reasoning_traces": transcript.reasoning,
             "usage": transcript.usage,
         }
