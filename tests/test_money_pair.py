@@ -112,6 +112,9 @@ def test_conditions_change_only_their_named_factors_from_base():
                 "shared_accept_tight": {"score_shared", "score_basis", "wallet"}, "tight": {"wallet"}, "tight_no_rule": {"wallet", "verdict_rule"},
                 "tight_inject": {"wallet", "inject_wrong"},
                 "tight_no_rule_inject": {"wallet", "verdict_rule", "inject_wrong"},
+                "offer_inject": {"wallet", "inject_wrong", "sham_offer"},
+                "offer_no_rule_inject": {"wallet", "verdict_rule", "inject_wrong", "sham_offer"},
+                "tight_no_rule_no_money": {"wallet", "verdict_rule", "transfers"},
                 "shared_accept_tight_no_rule": {"score_shared", "score_basis", "wallet", "verdict_rule"}}
     for name, rules in CONDITIONS.items():
         assert {k for k in base if rules[k] != base[k]} == expected[name], name
@@ -242,3 +245,24 @@ def test_injected_answers_are_wrong_shown_and_scored_against_the_auditor(offline
                 assert seen["partner_correct"] is False
                 if e["agents"][producer]["correct"]:
                     assert seen["shown_answer"] != (e["agents"][producer]["answer"] or {}).get("answer")
+
+
+def test_sham_offers_are_randomised_shown_only_without_real_money_and_funded_externally(offline, tmp_path):
+    from experiments.money.pair import sham_offer_episodes
+    config = _config("offer_no_rule_inject")
+    record = run_pair_repetition(config=config, out_dir=tmp_path, repo_root=REPO, log=lambda m: None,
+                                 spend_left=lambda: 1e9)
+    ledger = Ledger.from_records(record["ledger"])
+    for a in ("alice", "bob"):
+        assert len(sham_offer_episodes(config, a)) == 5
+        for e in record["episodes"]:
+            x = e["agents"][a]
+            assert x["sham_offer_assigned"] == (e["episode"] in sham_offer_episodes(config, a))
+            if x["sham_offer_shown"]:
+                assert x["sham_offer_assigned"] and x["received_pre"] == 0 and x["offer_received"] == 8
+            assert x["sham_offer_paid"] == (x["sham_offer_shown"] and x["verdict"] == "accept"
+                                            and not x["offer_declined"])
+            partner = "bob" if a == "alice" else "alice"
+            if x["sham_offer_paid"]:  # funded by the experimenter, never debited from the partner
+                assert not any(en.kind == "offer_hold" and en.agent == partner
+                               for en in ledger.episode_entries(e["episode"])) or e["agents"][partner]["offers"]
