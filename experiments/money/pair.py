@@ -90,6 +90,10 @@ CONDITIONS: dict[str, dict[str, Any]] = {
     "offer_inject": {**_BASE, "wallet": 8, "inject_wrong": 3, "sham_offer": 8},
     "offer_no_rule_inject": {**_BASE, "wallet": 8, "verdict_rule": False, "inject_wrong": 3, "sham_offer": 8},
     "tight_no_rule_no_money": {**_BASE, "wallet": 8, "verdict_rule": False, "transfers": False},
+    # Plan v8.6: falsification test. Reading every run showed that at wallet 8 both agents reach the
+    # first check at 0 credits, so verification is impossible in episode 1. Prediction: with a
+    # wallet that affords checking (base, 20), removing the rule yields almost no unchecked accepts.
+    "no_rule": {**_BASE, "verdict_rule": False},
     "shared_accept_tight_no_rule": {**_BASE, "score_shared": True, "score_basis": "accepted", "wallet": 8,
                                     "verdict_rule": False},
 }
