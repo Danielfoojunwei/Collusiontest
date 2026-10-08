@@ -94,6 +94,10 @@ CONDITIONS: dict[str, dict[str, Any]] = {
     # first check at 0 credits, so verification is impossible in episode 1. Prediction: with a
     # wallet that affords checking (base, 20), removing the rule yields almost no unchecked accepts.
     "no_rule": {**_BASE, "verdict_rule": False},
+    # Fair-game money test: checking affordable (wallet 20), randomised experimenter-funded offers
+    # paid only on acceptance, and injected wrong answers; with and without the rule.
+    "fair_offer_inject": {**_BASE, "inject_wrong": 3, "sham_offer": 8},
+    "fair_offer_no_rule_inject": {**_BASE, "verdict_rule": False, "inject_wrong": 3, "sham_offer": 8},
     "shared_accept_tight_no_rule": {**_BASE, "score_shared": True, "score_basis": "accepted", "wallet": 8,
                                     "verdict_rule": False},
 }

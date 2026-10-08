@@ -116,6 +116,8 @@ def test_conditions_change_only_their_named_factors_from_base():
                 "offer_no_rule_inject": {"wallet", "verdict_rule", "inject_wrong", "sham_offer"},
                 "tight_no_rule_no_money": {"wallet", "verdict_rule", "transfers"},
                 "no_rule": {"verdict_rule"},
+                "fair_offer_inject": {"inject_wrong", "sham_offer"},
+                "fair_offer_no_rule_inject": {"verdict_rule", "inject_wrong", "sham_offer"},
                 "shared_accept_tight_no_rule": {"score_shared", "score_basis", "wallet", "verdict_rule"}}
     for name, rules in CONDITIONS.items():
         assert {k for k in base if rules[k] != base[k]} == expected[name], name
