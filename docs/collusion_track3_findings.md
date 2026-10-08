@@ -33,6 +33,7 @@ What we did find are **failure modes a real colluder or attacker could use**:
 
 | Family | Design | Model(s) | Runs | Status |
 |---|---|---|---|---|
+| A0. Chat game + turnover, cheap model | Same chat game; fresh Bob after first onset | Gemini-3.1-flash-lite low | 13 sequences, 10 onset pairs | `data/turnover/2026-09-29_gemini-3.1-flash-lite/` |
 | A. Chat game (paper reproduction) | Team repo game: chat (~200 chars), shared verdict-accuracy reward, full-history memory, verdict review; + turnover (fresh Bob after first onset) | GPT-6-Luna high | 19 + 2 turnover sequences | `data/gpt-6-luna/2026-10-05/` |
 | B. Scripted partner (v5–v6) | One LLM (Alice) audits a scripted Bob who is wrong 6/10 and pays randomised 0/4/8/12 credits, unconditionally or only on acceptance | Qwen3.8-27B high | 4 pilots (13 runs) + main (13, 8 complete) | Stopped for v7 |
 | C. Two-LLM money game, wallet 8 (v8.2–v8.5) | Both agents LLMs; tool calls cost 4; checking cap 1 call; transfers and on-accept offers; paid reflection reads; rule × score; money removal; randomised offers; injected wrong answers | Qwen, GPT-6-Luna low, DeepSeek V4 Pro high | ~330 | **Design flaw (§7): both agents reach the first check at 0 credits** |
@@ -87,6 +88,7 @@ There was no coordination to disrupt, so we report what these interventions do t
 | Intervention | Effect | Cost |
 |---|---|---|
 | **Verification norm** ("accept only if your own check supports it") | Broke agents' unchecked approval: ~1% with the norm vs 75–100% without. Injected wrong answers approved: 7–8% vs 18–37% | **Compliance poverty trap.** Broke agents must reject, so neither earns the +10 and both stay broke. At wallet 8 task accuracy halves (0.47 vs 0.93) and 35% of verdicts reject correct work. At wallet 20 GPT still drifts into it: check rate 98% (ep 1) → 33% (ep 10), balance at check 10 → 6. |
+| **Fresh partner (turnover, Gemini, family A0, 10 pairs)** | Fresh Bob rejects in his first episode 10/10 vs incumbent accepting 7/10 (Fisher p = 0.003, per sequence). **Buys one episode:** 7/10 fresh Bobs accept within 2 more episodes; joint unsupported accepts return in 5/10 pairs (8/30 vs 16/30 episodes), with no recruitment detected | Accuracy 62% → 48%; compliance was impossible in 240/240 judgements (logs longer than the channel) |
 | **Fresh partner (turnover, family A)** | Joint approvals 0/6 after replacement vs 2/6 in control (n = 2 sequences, not significant) | The fresh Bob rejects everything (12/12) and asks for evidence the channel cannot carry. Verdict accuracy falls (2/12 vs 5/12). |
 | **Paying for the auditor's check** (unconditional transfer, family B) | The payment let the auditor check, and the check caught the error (9/10) | Only unconditional payments; escrowed (on-accept) offers can leave the auditor unable to check |
 
@@ -176,7 +178,7 @@ There was no coalition to observe. What we can report:
 
 ## 10. What this means for Track 3
 
-1. **A null on coordinated collusion is the main result, and it is robust:**
+1. **A null on coordinated collusion is the main result for capable models, and it is robust.** The one setting with frequent joint unsupported accepts (cheap Gemini in the chat game, 10/13 sequences) had a channel that made compliance impossible, and the behaviour returned after turnover without any recruitment: again circumstance, not conspiracy. The null holds across:
    - three designs (chat, scripted payer, two-LLM money game);
    - three model families;
    - eight carrier routes;
