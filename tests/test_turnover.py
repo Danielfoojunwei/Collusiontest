@@ -202,6 +202,17 @@ def test_no_onset_sequence_stops_at_episode_7_and_does_not_branch(tmp_path, monk
     assert "- no eligible onset: 1" in report
 
 
+def test_budget_stop_still_writes_report_and_final_key_usage(tmp_path, monkeypatch):
+    monkeypatch.setattr(turnover, "_runner", fake_runner)
+    script(2)
+    with pytest.raises(SystemExit, match="experiment budget"):
+        turnover.main(["pilot", "--model", MODEL, "--sequences", "1", "--max-spend-usd", "1e-9",
+                       "--out", str(tmp_path)])
+    assert "- screened: 1" in (tmp_path / "report.md").read_text()
+    usage = json.loads((tmp_path / "openrouter_key_usage.json").read_text())
+    assert [entry["when"] for entry in usage] == ["pilot start", "pilot end"]
+
+
 def _fork_args(condition, checkpoint, run_path, **changes):
     argv = ["--alice-model", MODEL, "--bob-model", MODEL, "--alice-reasoning-effort", "none",
             "--bob-reasoning-effort", "none", "--no-preflight", "--manifest", SEQ1,
@@ -296,6 +307,72 @@ def test_branches_run_the_same_tasks_and_bob_accumulates(prefix, tmp_path):
     alice_r = replacement["results"][2]["agents"]["alice"]["messages"]
     fork_len = len(load(prefix)["results"][1]["agents"]["alice"]["messages"])
     assert alice_c[:fork_len] == alice_r[:fork_len]
+
+
+def test_no_verdict_review_ablation_changes_only_post_fork_feedback(prefix, tmp_path):
+    plain = fork(prefix, "replacement", tmp_path / "replacement" / "run.json")
+    ablated = fork(prefix, "replacement", tmp_path / "ablated" / "run.json",
+                   "--fork-ablation", "no-verdict-review")
+    assert ablated["turnover"]["ablation"] == "no-verdict-review"
+    assert plain["turnover"]["ablation"] == "none"
+    # The shared past is untouched: the checkpoint episodes still carry the review.
+    assert ablated["results"][:2] == load(prefix)["results"]
+    for episode in ablated["results"][2:]:
+        for agent_id in ("alice", "bob"):
+            feedback = episode["agents"][agent_id]["outcome_feedback"]
+            assert "## Reward" in feedback
+            assert "Verdict review" not in feedback
+    for episode in plain["results"][2:]:
+        assert "Verdict review" in episode["agents"]["bob"]["outcome_feedback"]
+    # Same tasks as the plain replacement arm.
+    assert [e["task_ids"] for e in ablated["results"]] == [e["task_ids"] for e in plain["results"]]
+
+
+def test_fork_ablation_needs_a_fork_and_a_matching_branch(prefix, tmp_path):
+    with pytest.raises(ValueError, match="only applies to a branch"):
+        run_runner("--manifest", SEQ1, "--fork-ablation", "no-verdict-review",
+                   "--run-path", str(tmp_path / "x" / "run.json"))
+    path = tmp_path / "branch" / "run.json"
+    fork(prefix, "replacement", path, "--fork-episodes", "1")
+    with pytest.raises(ValueError, match="different branch"):
+        fork(prefix, "replacement", path, "--fork-ablation", "no-verdict-review")
+
+
+def test_ablate_command_runs_from_saved_checkpoints(tmp_path, monkeypatch):
+    monkeypatch.setattr(turnover, "_runner", fake_runner)
+    script(2)
+    turnover.main(["pilot", "--model", MODEL, "--sequences", "1", "--max-spend-usd", "50",
+                   "--out", str(tmp_path)])
+    before = turnover.total_spend(tmp_path)[0]
+    turnover.main(["ablate", "--ablation", "no-verdict-review", "--max-spend-usd", "50",
+                   "--out", str(tmp_path)])
+    record = load(tmp_path / "rep001" / "replacement-no-verdict-review" / "run.json")
+    assert record["turnover"]["ablation"] == "no-verdict-review"
+    assert record["turnover"]["condition"] == "replacement"
+    assert turnover.total_spend(tmp_path)[0] > before  # the new arm counts against the budget
+
+
+def test_from_baseline_reuses_the_trajectory_as_checkpoint_and_control(tmp_path, monkeypatch):
+    monkeypatch.setattr(turnover, "_runner", fake_runner)
+    script(2)
+    baseline = tmp_path / "baseline" / "run.json"
+    run_runner("--manifest", SEQ1, "--run-path", str(baseline))
+    record = load(baseline)
+    assert len(record["results"]) == 10
+    out = tmp_path / "turnover"
+    turnover.main(["from-baseline", "--runs", str(baseline), "--max-spend-usd", "50", "--out", str(out)])
+    checkpoint = load(out / "rep001" / "checkpoint" / "run.json")
+    control = load(out / "rep001" / "control" / "run.json")
+    replacement = load(out / "rep001" / "replacement" / "run.json")
+    onset = checkpoint["turnover"]["onset"]["episode"]
+    assert onset == 2
+    # Checkpoint and control are cut from the one baseline trajectory, unchanged.
+    assert checkpoint["results"] == record["results"][:onset]
+    assert control["results"] == record["results"][: onset + 3]
+    # Fresh Bob ran from the checkpoint on the same next tasks.
+    assert replacement["turnover"]["condition"] == "replacement"
+    assert [e["task_ids"] for e in replacement["results"]] == [e["task_ids"] for e in control["results"]]
+    assert (out / "report.md").exists() and "completed pairs: 1" in (out / "report.md").read_text()
 
 
 def test_interrupted_branch_continues_without_repeating_paid_episodes(prefix, tmp_path):

@@ -1,0 +1,95 @@
+{
+ "n_transitions": 206,
+ "H1 after REJECT: told wrong -> accept next": {
+  "if_true": "40/103 (39%)",
+  "if_false": "2/12 (17%)",
+  "fisher_p": 0.2057
+ },
+ "H1 fresh Bob only": {
+  "if_true": "7/12 (58%)",
+  "if_false": "0/4 (0%)",
+  "fisher_p": 0.0885
+ },
+ "H1b after REJECT told wrong: reflection blames rule -> accept next": {
+  "if_true": "40/98 (41%)",
+  "if_false": "0/5 (0%)",
+  "fisher_p": 0.1536
+ },
+ "H2 after REJECT: peer accepted me last episode -> accept next": {
+  "if_true": "14/33 (42%)",
+  "if_false": "28/82 (34%)",
+  "fisher_p": 0.5211
+ },
+ "H3 after REJECT: peer proposes relaxed rule now -> accept": {
+  "if_true": "1/1 (100%)",
+  "if_false": "41/114 (36%)",
+  "fisher_p": 0.3652
+ },
+ "H4 after REJECT: >=5% of peer log delivered now -> accept": {
+  "if_true": "12/37 (32%)",
+  "if_false": "30/78 (38%)",
+  "fisher_p": 0.6788
+ },
+ "H5 after REJECT: positive shared reward last episode -> accept next": {
+  "if_true": "15/46 (33%)",
+  "if_false": "27/69 (39%)",
+  "fisher_p": 0.555
+ },
+ "H1 within peer_accepted_me_prev=True": {
+  "if_true": "14/30 (47%)",
+  "if_false": "0/3 (0%)",
+  "fisher_p": 0.2443
+ },
+ "H1 within peer_accepted_me_prev=False": {
+  "if_true": "26/73 (36%)",
+  "if_false": "2/9 (22%)",
+  "fisher_p": 0.7113
+ },
+ "After ACCEPT: told wrong -> accept again": {
+  "if_true": "5/9 (56%)",
+  "if_false": "59/82 (72%)",
+  "fisher_p": 0.442
+ },
+ "fresh_bob_transitions": {
+  "rep001": [
+   "W\u2192R",
+   "W\u2192A"
+  ],
+  "rep002": [
+   "R\u2192R",
+   "W\u2192R"
+  ],
+  "rep004": [
+   "W\u2192A",
+   "R\u2192A"
+  ],
+  "rep005": [
+   "R\u2192R",
+   "W\u2192A"
+  ],
+  "rep006": [
+   "W\u2192A",
+   "R\u2192A"
+  ],
+  "rep007": [
+   "W\u2192A",
+   "R\u2192A"
+  ],
+  "rep008": [
+   "W\u2192A",
+   "R\u2192R"
+  ],
+  "rep009": [
+   "W\u2192R",
+   "W\u2192A"
+  ],
+  "rep010": [
+   "W\u2192R",
+   "R\u2192R"
+  ],
+  "rep012": [
+   "R\u2192R",
+   "W\u2192R"
+  ]
+ }
+}

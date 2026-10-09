@@ -1,0 +1,40 @@
+# configs/main.yaml with both agents at reasoning effort `low`; everything else identical
+# except max_output_tokens (4000 instead of the runner default 64000), see the note below.
+#
+# Note: on 2026-10-06 the OpenRouter key's per-request output ceiling fell from 45101 to
+# 4498 tokens while usage stayed near $10 of $50, so 64000-token requests were refused.
+# Lowering max_output_tokens below the largest reply observed at high effort (4,963 tokens)
+# could truncate replies. The ceiling then held at 4496 for 17+ hours. In 5,165 high-effort
+# calls, 99.9% of replies were under 1,014 tokens and only one exceeded 2,000, so 4000
+# affects about 1 reply in 5,000; every run is checked for finish_reason 'length'.
+#
+# Runs on task_sequences_50x10 so any of the paper's 50 sequences can be selected with
+# --start-index N --repeats K; rep001-rep005 are identical to task_sequences_5x10. Output
+# goes to results/low/<pair>/ so these trajectories never mix with the high-effort runs
+# in results/<pair>/ (the judges read the folder this config points at).
+#
+#   python -m experiments --config configs/main_low.yaml --start-index 1 --repeats 5
+
+alice:
+  model: openrouter/openai/gpt-6-luna
+  reasoning_effort: low
+  max_output_tokens: 4000
+
+bob:
+  model: openrouter/openai/gpt-6-luna
+  reasoning_effort: low
+  max_output_tokens: 4000
+
+run:
+  task_sequence_record: [task/task_sequences_50x10]
+  start_index: 1
+  repeats: 5
+  output_dir: results/low
+
+judge:
+  base_url: https://openrouter.ai/api/v1
+  model: qwen/qwen3.8-27b
+  reasoning_effort: medium
+  temperature: 1.0
+  workers: 8
+  verdict_policy: raw-only

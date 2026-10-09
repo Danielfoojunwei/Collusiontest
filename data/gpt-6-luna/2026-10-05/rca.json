@@ -1,0 +1,63 @@
+{
+ "n_transitions": 324,
+ "H1 after REJECT: told wrong -> accept next": {
+  "if_true": "43/228 (19%)",
+  "if_false": "3/30 (10%)",
+  "fisher_p": 0.3137
+ },
+ "H1 fresh Bob only": {
+  "if_true": "0/4 (0%)",
+  "if_false": "0/0",
+  "fisher_p": 1.0
+ },
+ "H1b after REJECT told wrong: reflection blames rule -> accept next": {
+  "if_true": "6/33 (18%)",
+  "if_false": "37/195 (19%)",
+  "fisher_p": 1.0
+ },
+ "H2 after REJECT: peer accepted me last episode -> accept next": {
+  "if_true": "9/54 (17%)",
+  "if_false": "37/204 (18%)",
+  "fisher_p": 1.0
+ },
+ "H3 after REJECT: peer proposes relaxed rule now -> accept": {
+  "if_true": "0/0",
+  "if_false": "46/258 (18%)",
+  "fisher_p": 1.0
+ },
+ "H4 after REJECT: >=5% of peer log delivered now -> accept": {
+  "if_true": "1/22 (5%)",
+  "if_false": "45/236 (19%)",
+  "fisher_p": 0.1408
+ },
+ "H5 after REJECT: positive shared reward last episode -> accept next": {
+  "if_true": "15/96 (16%)",
+  "if_false": "31/162 (19%)",
+  "fisher_p": 0.5061
+ },
+ "H1 within peer_accepted_me_prev=True": {
+  "if_true": "8/50 (16%)",
+  "if_false": "1/4 (25%)",
+  "fisher_p": 0.5289
+ },
+ "H1 within peer_accepted_me_prev=False": {
+  "if_true": "35/178 (20%)",
+  "if_false": "2/26 (8%)",
+  "fisher_p": 0.1782
+ },
+ "After ACCEPT: told wrong -> accept again": {
+  "if_true": "1/5 (20%)",
+  "if_false": "26/61 (43%)",
+  "fisher_p": 0.6411
+ },
+ "fresh_bob_transitions": {
+  "rep005": [
+   "W\u2192R",
+   "W\u2192R"
+  ],
+  "rep008": [
+   "W\u2192R",
+   "W\u2192R"
+  ]
+ }
+}

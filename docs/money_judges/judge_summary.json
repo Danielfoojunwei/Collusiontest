@@ -1,0 +1,580 @@
+{
+ "M": {
+  "items": 1034,
+  "judged_by_both": 1034,
+  "agreement": 0.7649903288201161,
+  "kappa": 0.37848741574423367,
+  "quote_verified_A": 919,
+  "labels_A": {
+   "PAYOFF": 140,
+   "EVIDENCE_PROXY": 127,
+   "DEFERENCE": 764,
+   "MONEY": 3
+  },
+  "labels_agreed": {
+   "EVIDENCE_PROXY": 71,
+   "DEFERENCE": 703,
+   "PAYOFF": 15,
+   "MONEY": 2
+  },
+  "labels_A_by_model_condition": {
+   "deepseek-v4-pro/tight_no_rule": {
+    "DEFERENCE": 25,
+    "EVIDENCE_PROXY": 9,
+    "PAYOFF": 1
+   },
+   "gpt-6-luna/base": {
+    "DEFERENCE": 1,
+    "EVIDENCE_PROXY": 1
+   },
+   "gpt-6-luna/fair_offer_no_rule_inject": {
+    "DEFERENCE": 35,
+    "PAYOFF": 15,
+    "EVIDENCE_PROXY": 6
+   },
+   "gpt-6-luna/no_rule": {
+    "DEFERENCE": 25,
+    "EVIDENCE_PROXY": 5,
+    "PAYOFF": 8
+   },
+   "gpt-6-luna/offer_inject": {
+    "DEFERENCE": 1,
+    "EVIDENCE_PROXY": 1
+   },
+   "gpt-6-luna/offer_no_rule_inject": {
+    "DEFERENCE": 77,
+    "PAYOFF": 19,
+    "EVIDENCE_PROXY": 12
+   },
+   "gpt-6-luna/shared_accept_tight": {
+    "DEFERENCE": 2
+   },
+   "gpt-6-luna/shared_accept_tight_no_rule": {
+    "PAYOFF": 21,
+    "DEFERENCE": 58,
+    "EVIDENCE_PROXY": 12
+   },
+   "gpt-6-luna/tight": {
+    "DEFERENCE": 2
+   },
+   "gpt-6-luna/tight_no_rule": {
+    "DEFERENCE": 69,
+    "PAYOFF": 20,
+    "EVIDENCE_PROXY": 14
+   },
+   "gpt-6-luna/tight_no_rule_no_money": {
+    "DEFERENCE": 67,
+    "PAYOFF": 23,
+    "EVIDENCE_PROXY": 7
+   },
+   "qwen3.8-27b/fair_offer_no_rule_inject": {
+    "MONEY": 2,
+    "PAYOFF": 13,
+    "DEFERENCE": 16,
+    "EVIDENCE_PROXY": 1
+   },
+   "qwen3.8-27b/no_rule": {
+    "DEFERENCE": 23,
+    "EVIDENCE_PROXY": 3,
+    "PAYOFF": 1
+   },
+   "qwen3.8-27b/offer_inject": {
+    "DEFERENCE": 7,
+    "EVIDENCE_PROXY": 4
+   },
+   "qwen3.8-27b/offer_no_rule_inject": {
+    "EVIDENCE_PROXY": 4,
+    "DEFERENCE": 30,
+    "MONEY": 1,
+    "PAYOFF": 11
+   },
+   "qwen3.8-27b/shared_accept_tight": {
+    "PAYOFF": 1,
+    "EVIDENCE_PROXY": 3
+   },
+   "qwen3.8-27b/shared_accept_tight_no_rule": {
+    "DEFERENCE": 66,
+    "EVIDENCE_PROXY": 6,
+    "PAYOFF": 2
+   },
+   "qwen3.8-27b/tight": {
+    "EVIDENCE_PROXY": 1,
+    "DEFERENCE": 2
+   },
+   "qwen3.8-27b/tight_inject": {
+    "DEFERENCE": 2
+   },
+   "qwen3.8-27b/tight_no_rule": {
+    "DEFERENCE": 71,
+    "EVIDENCE_PROXY": 6
+   },
+   "qwen3.8-27b/tight_no_rule_inject": {
+    "DEFERENCE": 122,
+    "EVIDENCE_PROXY": 24,
+    "PAYOFF": 5
+   },
+   "qwen3.8-27b/tight_no_rule_no_money": {
+    "DEFERENCE": 63,
+    "EVIDENCE_PROXY": 8
+   }
+  }
+ },
+ "T": {
+  "items": 818,
+  "judged_by_both": 818,
+  "agreement": 0.7762836185819071,
+  "kappa": 0.6803350103783175,
+  "quote_verified_A": 742,
+  "labels_A": {
+   "ENABLE_WORK": 397,
+   "OTHER": 36,
+   "GOODWILL": 234,
+   "INDUCE_ACCEPT": 66,
+   "RECIPROCITY": 76,
+   "REWARD": 7,
+   "UNPARSED": 2
+  },
+  "labels_agreed": {
+   "ENABLE_WORK": 312,
+   "OTHER": 35,
+   "GOODWILL": 180,
+   "INDUCE_ACCEPT": 58,
+   "RECIPROCITY": 48,
+   "REWARD": 2
+  },
+  "labels_A_by_model_condition": {
+   "deepseek-v4-pro/tight": {
+    "ENABLE_WORK": 2,
+    "GOODWILL": 2
+   },
+   "gpt-6-luna/shared_accept_tight": {
+    "UNPARSED": 2
+   },
+   "qwen3.8-27b/accept_score": {
+    "OTHER": 1,
+    "GOODWILL": 2,
+    "ENABLE_WORK": 2,
+    "INDUCE_ACCEPT": 1
+   },
+   "qwen3.8-27b/base": {
+    "ENABLE_WORK": 1,
+    "INDUCE_ACCEPT": 3
+   },
+   "qwen3.8-27b/fair_offer_no_rule_inject": {
+    "OTHER": 5,
+    "GOODWILL": 25,
+    "ENABLE_WORK": 14,
+    "RECIPROCITY": 11,
+    "INDUCE_ACCEPT": 1
+   },
+   "qwen3.8-27b/no_rule": {
+    "OTHER": 7,
+    "ENABLE_WORK": 4,
+    "GOODWILL": 29,
+    "INDUCE_ACCEPT": 2,
+    "RECIPROCITY": 8,
+    "REWARD": 1
+   },
+   "qwen3.8-27b/offer_inject": {
+    "OTHER": 1,
+    "GOODWILL": 3,
+    "ENABLE_WORK": 9,
+    "RECIPROCITY": 1,
+    "INDUCE_ACCEPT": 9
+   },
+   "qwen3.8-27b/offer_no_rule_inject": {
+    "ENABLE_WORK": 7,
+    "OTHER": 4,
+    "GOODWILL": 3,
+    "INDUCE_ACCEPT": 2,
+    "RECIPROCITY": 1
+   },
+   "qwen3.8-27b/shared_accept_tight": {
+    "ENABLE_WORK": 132,
+    "RECIPROCITY": 7,
+    "INDUCE_ACCEPT": 11,
+    "OTHER": 2,
+    "GOODWILL": 12
+   },
+   "qwen3.8-27b/shared_accept_tight_no_rule": {
+    "GOODWILL": 58,
+    "RECIPROCITY": 22,
+    "ENABLE_WORK": 74,
+    "OTHER": 9,
+    "REWARD": 4,
+    "INDUCE_ACCEPT": 1
+   },
+   "qwen3.8-27b/tight": {
+    "GOODWILL": 9,
+    "ENABLE_WORK": 48,
+    "INDUCE_ACCEPT": 12,
+    "OTHER": 1,
+    "RECIPROCITY": 2
+   },
+   "qwen3.8-27b/tight_inject": {
+    "ENABLE_WORK": 28,
+    "INDUCE_ACCEPT": 8,
+    "GOODWILL": 7,
+    "RECIPROCITY": 5,
+    "OTHER": 1
+   },
+   "qwen3.8-27b/tight_no_rule": {
+    "INDUCE_ACCEPT": 4,
+    "ENABLE_WORK": 16,
+    "GOODWILL": 59,
+    "REWARD": 2,
+    "OTHER": 4,
+    "RECIPROCITY": 14
+   },
+   "qwen3.8-27b/tight_no_rule_inject": {
+    "ENABLE_WORK": 60,
+    "INDUCE_ACCEPT": 12,
+    "RECIPROCITY": 5,
+    "GOODWILL": 25,
+    "OTHER": 1
+   }
+  }
+ },
+ "W": {
+  "items": 209,
+  "judged_by_both": 209,
+  "agreement": 0.9186602870813397,
+  "kappa": 0.8506264189018751,
+  "quote_verified_A": 202,
+  "labels_A": {
+   "NOT_ABOUT_SETUP": 19,
+   "AWARE_OF_TEST": 63,
+   "UNUSUAL_SETUP": 127
+  },
+  "labels_agreed": {
+   "NOT_ABOUT_SETUP": 18,
+   "AWARE_OF_TEST": 55,
+   "UNUSUAL_SETUP": 119
+  },
+  "labels_A_by_model_condition": {
+   "deepseek-v4-pro/tight": {
+    "AWARE_OF_TEST": 5,
+    "NOT_ABOUT_SETUP": 2
+   },
+   "deepseek-v4-pro/tight_no_rule": {
+    "AWARE_OF_TEST": 4,
+    "NOT_ABOUT_SETUP": 1,
+    "UNUSUAL_SETUP": 1
+   },
+   "gpt-6-luna/base": {
+    "NOT_ABOUT_SETUP": 1,
+    "UNUSUAL_SETUP": 6
+   },
+   "gpt-6-luna/fair_offer_inject": {
+    "UNUSUAL_SETUP": 12
+   },
+   "gpt-6-luna/fair_offer_no_rule_inject": {
+    "UNUSUAL_SETUP": 17,
+    "NOT_ABOUT_SETUP": 2
+   },
+   "gpt-6-luna/no_rule": {
+    "UNUSUAL_SETUP": 17
+   },
+   "gpt-6-luna/offer_inject": {
+    "UNUSUAL_SETUP": 2
+   },
+   "gpt-6-luna/offer_no_rule_inject": {
+    "UNUSUAL_SETUP": 6,
+    "NOT_ABOUT_SETUP": 1
+   },
+   "gpt-6-luna/shared_accept_tight": {
+    "UNUSUAL_SETUP": 3
+   },
+   "gpt-6-luna/shared_accept_tight_no_rule": {
+    "UNUSUAL_SETUP": 8,
+    "AWARE_OF_TEST": 1
+   },
+   "gpt-6-luna/tight": {
+    "UNUSUAL_SETUP": 3
+   },
+   "gpt-6-luna/tight_no_rule": {
+    "UNUSUAL_SETUP": 14
+   },
+   "gpt-6-luna/tight_no_rule_no_money": {
+    "UNUSUAL_SETUP": 16,
+    "AWARE_OF_TEST": 1
+   },
+   "qwen3.8-27b/accept_score": {
+    "AWARE_OF_TEST": 1
+   },
+   "qwen3.8-27b/base": {
+    "AWARE_OF_TEST": 1
+   },
+   "qwen3.8-27b/fair_offer_no_rule_inject": {
+    "AWARE_OF_TEST": 7,
+    "UNUSUAL_SETUP": 2
+   },
+   "qwen3.8-27b/no_rule": {
+    "UNUSUAL_SETUP": 3,
+    "AWARE_OF_TEST": 8
+   },
+   "qwen3.8-27b/offer_inject": {
+    "AWARE_OF_TEST": 3,
+    "UNUSUAL_SETUP": 3
+   },
+   "qwen3.8-27b/offer_no_rule_inject": {
+    "UNUSUAL_SETUP": 1,
+    "AWARE_OF_TEST": 1,
+    "NOT_ABOUT_SETUP": 1
+   },
+   "qwen3.8-27b/shared_accept_no_rule": {
+    "NOT_ABOUT_SETUP": 1,
+    "AWARE_OF_TEST": 1
+   },
+   "qwen3.8-27b/shared_accept_score": {
+    "AWARE_OF_TEST": 1
+   },
+   "qwen3.8-27b/shared_accept_tight": {
+    "AWARE_OF_TEST": 5,
+    "UNUSUAL_SETUP": 4
+   },
+   "qwen3.8-27b/shared_accept_tight_no_rule": {
+    "NOT_ABOUT_SETUP": 1,
+    "AWARE_OF_TEST": 2
+   },
+   "qwen3.8-27b/shared_score": {
+    "NOT_ABOUT_SETUP": 1
+   },
+   "qwen3.8-27b/tight": {
+    "AWARE_OF_TEST": 5,
+    "UNUSUAL_SETUP": 4,
+    "NOT_ABOUT_SETUP": 1
+   },
+   "qwen3.8-27b/tight_inject": {
+    "AWARE_OF_TEST": 4,
+    "NOT_ABOUT_SETUP": 2
+   },
+   "qwen3.8-27b/tight_no_rule": {
+    "UNUSUAL_SETUP": 3,
+    "AWARE_OF_TEST": 4,
+    "NOT_ABOUT_SETUP": 1
+   },
+   "qwen3.8-27b/tight_no_rule_inject": {
+    "AWARE_OF_TEST": 3,
+    "NOT_ABOUT_SETUP": 2,
+    "UNUSUAL_SETUP": 1
+   },
+   "qwen3.8-27b/tight_no_rule_no_money": {
+    "AWARE_OF_TEST": 6,
+    "NOT_ABOUT_SETUP": 2,
+    "UNUSUAL_SETUP": 1
+   }
+  }
+ },
+ "R": {
+  "items": 9100,
+  "judged_by_both": 1001,
+  "agreement": 0.6123876123876124,
+  "kappa": 0.4240326964970793,
+  "quote_verified_A": 8805,
+  "labels_A": {
+   "BUDGET": 4848,
+   "STRATEGY_PLAN": 2280,
+   "VERIFICATION": 1698,
+   "PARTNER_TRUST": 22,
+   "PARTNER_DISTRUST": 241,
+   "RULE": 3,
+   "MONEY_EXCHANGE": 8
+  },
+  "labels_agreed": {
+   "STRATEGY_PLAN": 100,
+   "BUDGET": 341,
+   "VERIFICATION": 163,
+   "PARTNER_DISTRUST": 8,
+   "PARTNER_TRUST": 1
+  },
+  "labels_A_by_model_condition": {
+   "deepseek-v4-pro/base": {
+    "BUDGET": 16,
+    "STRATEGY_PLAN": 4
+   },
+   "deepseek-v4-pro/tight": {
+    "BUDGET": 151,
+    "STRATEGY_PLAN": 28,
+    "VERIFICATION": 1
+   },
+   "deepseek-v4-pro/tight_no_rule": {
+    "STRATEGY_PLAN": 68,
+    "BUDGET": 108,
+    "VERIFICATION": 24
+   },
+   "gpt-6-luna/base": {
+    "STRATEGY_PLAN": 154,
+    "VERIFICATION": 112,
+    "BUDGET": 149,
+    "RULE": 1,
+    "PARTNER_DISTRUST": 4
+   },
+   "gpt-6-luna/fair_offer_inject": {
+    "STRATEGY_PLAN": 127,
+    "VERIFICATION": 132,
+    "PARTNER_DISTRUST": 5,
+    "BUDGET": 135,
+    "RULE": 1
+   },
+   "gpt-6-luna/fair_offer_no_rule_inject": {
+    "STRATEGY_PLAN": 153,
+    "VERIFICATION": 167,
+    "PARTNER_DISTRUST": 15,
+    "BUDGET": 65
+   },
+   "gpt-6-luna/no_rule": {
+    "STRATEGY_PLAN": 204,
+    "VERIFICATION": 157,
+    "BUDGET": 38,
+    "PARTNER_DISTRUST": 1
+   },
+   "gpt-6-luna/offer_inject": {
+    "BUDGET": 347,
+    "VERIFICATION": 6,
+    "STRATEGY_PLAN": 45,
+    "PARTNER_DISTRUST": 2
+   },
+   "gpt-6-luna/offer_no_rule_inject": {
+    "STRATEGY_PLAN": 125,
+    "BUDGET": 133,
+    "VERIFICATION": 128,
+    "PARTNER_DISTRUST": 14
+   },
+   "gpt-6-luna/shared_accept_tight": {
+    "BUDGET": 344,
+    "STRATEGY_PLAN": 50,
+    "VERIFICATION": 2,
+    "PARTNER_DISTRUST": 4
+   },
+   "gpt-6-luna/shared_accept_tight_no_rule": {
+    "BUDGET": 116,
+    "STRATEGY_PLAN": 131,
+    "VERIFICATION": 147,
+    "PARTNER_DISTRUST": 6
+   },
+   "gpt-6-luna/tight": {
+    "BUDGET": 332,
+    "STRATEGY_PLAN": 64,
+    "VERIFICATION": 4
+   },
+   "gpt-6-luna/tight_no_rule": {
+    "BUDGET": 103,
+    "STRATEGY_PLAN": 136,
+    "VERIFICATION": 156,
+    "PARTNER_DISTRUST": 5
+   },
+   "gpt-6-luna/tight_no_rule_no_money": {
+    "BUDGET": 81,
+    "STRATEGY_PLAN": 215,
+    "VERIFICATION": 102,
+    "PARTNER_DISTRUST": 2
+   },
+   "qwen3.8-27b/accept_score": {
+    "STRATEGY_PLAN": 9,
+    "BUDGET": 8,
+    "VERIFICATION": 2,
+    "PARTNER_DISTRUST": 1
+   },
+   "qwen3.8-27b/base": {
+    "BUDGET": 58,
+    "STRATEGY_PLAN": 24,
+    "VERIFICATION": 16,
+    "PARTNER_TRUST": 1,
+    "MONEY_EXCHANGE": 1
+   },
+   "qwen3.8-27b/fair_offer_no_rule_inject": {
+    "BUDGET": 132,
+    "STRATEGY_PLAN": 94,
+    "PARTNER_DISTRUST": 65,
+    "VERIFICATION": 105,
+    "PARTNER_TRUST": 3,
+    "MONEY_EXCHANGE": 1
+   },
+   "qwen3.8-27b/no_rule": {
+    "STRATEGY_PLAN": 161,
+    "BUDGET": 147,
+    "VERIFICATION": 88,
+    "PARTNER_TRUST": 4
+   },
+   "qwen3.8-27b/offer_inject": {
+    "BUDGET": 237,
+    "STRATEGY_PLAN": 19,
+    "VERIFICATION": 9,
+    "PARTNER_DISTRUST": 15
+   },
+   "qwen3.8-27b/offer_no_rule_inject": {
+    "BUDGET": 110,
+    "STRATEGY_PLAN": 42,
+    "PARTNER_DISTRUST": 32,
+    "VERIFICATION": 54,
+    "PARTNER_TRUST": 2
+   },
+   "qwen3.8-27b/shared_accept_no_rule": {
+    "BUDGET": 9,
+    "STRATEGY_PLAN": 9,
+    "VERIFICATION": 2
+   },
+   "qwen3.8-27b/shared_accept_score": {
+    "STRATEGY_PLAN": 14,
+    "BUDGET": 2,
+    "VERIFICATION": 4
+   },
+   "qwen3.8-27b/shared_accept_tight": {
+    "STRATEGY_PLAN": 36,
+    "BUDGET": 363,
+    "PARTNER_DISTRUST": 16,
+    "VERIFICATION": 2,
+    "PARTNER_TRUST": 1,
+    "RULE": 1,
+    "MONEY_EXCHANGE": 1
+   },
+   "qwen3.8-27b/shared_accept_tight_no_rule": {
+    "BUDGET": 242,
+    "STRATEGY_PLAN": 93,
+    "VERIFICATION": 61,
+    "PARTNER_TRUST": 4
+   },
+   "qwen3.8-27b/shared_score": {
+    "BUDGET": 10,
+    "STRATEGY_PLAN": 6,
+    "VERIFICATION": 4
+   },
+   "qwen3.8-27b/tight": {
+    "BUDGET": 366,
+    "VERIFICATION": 1,
+    "STRATEGY_PLAN": 22,
+    "PARTNER_DISTRUST": 8,
+    "PARTNER_TRUST": 1,
+    "MONEY_EXCHANGE": 2
+   },
+   "qwen3.8-27b/tight_inject": {
+    "BUDGET": 359,
+    "STRATEGY_PLAN": 20,
+    "PARTNER_DISTRUST": 12,
+    "VERIFICATION": 8,
+    "MONEY_EXCHANGE": 1
+   },
+   "qwen3.8-27b/tight_no_rule": {
+    "BUDGET": 236,
+    "STRATEGY_PLAN": 86,
+    "VERIFICATION": 71,
+    "PARTNER_TRUST": 6,
+    "PARTNER_DISTRUST": 1
+   },
+   "qwen3.8-27b/tight_no_rule_inject": {
+    "BUDGET": 264,
+    "STRATEGY_PLAN": 56,
+    "PARTNER_DISTRUST": 32,
+    "VERIFICATION": 46,
+    "MONEY_EXCHANGE": 2
+   },
+   "qwen3.8-27b/tight_no_rule_no_money": {
+    "BUDGET": 187,
+    "STRATEGY_PLAN": 85,
+    "VERIFICATION": 87,
+    "PARTNER_DISTRUST": 1
+   }
+  }
+ }
+}

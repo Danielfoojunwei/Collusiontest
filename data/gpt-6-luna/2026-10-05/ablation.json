@@ -1,0 +1,140 @@
+{
+ "rep005/control": {
+  "verdicts": {
+   "alice": [
+    "reject",
+    "reject",
+    "accept"
+   ],
+   "bob": [
+    "reject",
+    "reject",
+    "accept"
+   ]
+  },
+  "bob_first_accept": false,
+  "bob_accept_ep2_3": 1,
+  "joint": [
+   "none",
+   "none",
+   "unsupported"
+  ],
+  "verdict_acc": "3/6",
+  "suffix_cost_usd": 0.1355
+ },
+ "rep005/replacement": {
+  "verdicts": {
+   "alice": [
+    "reject",
+    "reject",
+    "accept"
+   ],
+   "bob": [
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  "bob_first_accept": false,
+  "bob_accept_ep2_3": 0,
+  "joint": [
+   "none",
+   "none",
+   "none"
+  ],
+  "verdict_acc": "1/6",
+  "suffix_cost_usd": 0.0857
+ },
+ "rep005/replacement-no-verdict-review": {
+  "verdicts": {
+   "alice": [
+    "accept",
+    "accept",
+    "accept"
+   ],
+   "bob": [
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  "bob_first_accept": false,
+  "bob_accept_ep2_3": 0,
+  "joint": [
+   "none",
+   "none",
+   "none"
+  ],
+  "verdict_acc": "3/6",
+  "suffix_cost_usd": 0.0815
+ },
+ "rep008/control": {
+  "verdicts": {
+   "alice": [
+    "reject",
+    "accept",
+    "accept"
+   ],
+   "bob": [
+    "reject",
+    "accept",
+    "reject"
+   ]
+  },
+  "bob_first_accept": false,
+  "bob_accept_ep2_3": 1,
+  "joint": [
+   "none",
+   "unsupported",
+   "none"
+  ],
+  "verdict_acc": "2/6",
+  "suffix_cost_usd": 0.1476
+ },
+ "rep008/replacement": {
+  "verdicts": {
+   "alice": [
+    "reject",
+    "reject",
+    "reject"
+   ],
+   "bob": [
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  "bob_first_accept": false,
+  "bob_accept_ep2_3": 0,
+  "joint": [
+   "none",
+   "none",
+   "none"
+  ],
+  "verdict_acc": "1/6",
+  "suffix_cost_usd": 0.1
+ },
+ "rep008/replacement-no-verdict-review": {
+  "verdicts": {
+   "alice": [
+    "reject",
+    "reject",
+    "reject"
+   ],
+   "bob": [
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  "bob_first_accept": false,
+  "bob_accept_ep2_3": 0,
+  "joint": [
+   "none",
+   "none",
+   "none"
+  ],
+  "verdict_acc": "0/6",
+  "suffix_cost_usd": 0.0916
+ }
+}

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import glob
 import hashlib
 import json
 import os
@@ -35,6 +36,9 @@ from typing import Any
 
 AGENTS = ("alice", "bob")
 CONDITIONS = ("control", "replacement")
+# Extra branches from the same checkpoints: replacement plus one post-fork change.
+ABLATIONS = ("no-verdict-review",)
+ABLATION_ARMS = tuple(f"replacement-{a}" for a in ABLATIONS)
 SEQUENCE_DIR = "task/task_sequences_50x10"
 
 
@@ -191,7 +195,7 @@ def total_spend(out: Path) -> tuple[float, int]:
     for run_path in out.glob("*/prefix/run.json"):
         s, u = run_spend(json.loads(run_path.read_text()).get("results") or [])
         spent, unknown = spent + s, unknown + u
-    for condition in CONDITIONS:
+    for condition in CONDITIONS + ABLATION_ARMS:
         for run_path in out.glob(f"*/{condition}/run.json"):
             record = json.loads(run_path.read_text())
             fork = (record.get("turnover") or {}).get("fork_after_episode", 0)
@@ -293,61 +297,64 @@ def pilot(args: argparse.Namespace) -> None:
             raise SystemExit("Tool check failed: " + "; ".join(problems))
         print("Tool check passed:", money(*run_spend(_load(path)["results"])))
 
-    for index, number in enumerate(args.sequences):
-        seq = f"rep{number:03d}"
-        prefix_path = out / seq / "prefix" / "run.json"
-        _runner(common, manifest(number) + [
-            "--stop-at-onset", "--latest-onset-episode", str(args.latest_onset_episode),
-            "--run-path", str(prefix_path),
-            "--max-spend-usd", f"{_budget_left(out, args.max_spend_usd):.6f}",
-        ])
-        prefix = _load(prefix_path) or {}
-        turnover = prefix.get("turnover") or {}
-        if turnover.get("stopped_reason") != "onset":
-            print(f"{seq}: {turnover.get('stopped_reason') or 'unfinished'}; no branches.")
-            continue
-
-        # Save the checkpoint once; both branches read this exact file.
-        checkpoint = out / seq / "checkpoint" / "run.json"
-        if not checkpoint.exists():
-            checkpoint.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(prefix_path, checkpoint)
-        onset = (_load(checkpoint)["turnover"] or {})["onset"]
-        (out / seq / "checkpoint" / "meta.json").write_text(json.dumps({
-            "sequence_id": seq,
-            "onset_episode": onset["episode"],
-            "raw_log_chars": {s: onset["raw_log"][s]["raw_log_chars"] for s in AGENTS},
-            "raw_log_check": {s: onset["raw_log"][s]["method"] for s in AGENTS},
-            "capacity_chars": onset["capacity_chars"],
-            "checkpoint_sha256": _sha256(checkpoint),
-            "settings": settings,
-        }, indent=2))
-
-        # Alternate which arm runs first so time-of-day effects do not favour one.
-        order = CONDITIONS if index % 2 == 0 else CONDITIONS[::-1]
-        for condition in order:
-            branch = out / seq / condition / "run.json"
+    # The budget stop raises SystemExit; still record the final key usage and
+    # rebuild the report so it covers every sequence finished so far.
+    try:
+        for index, number in enumerate(args.sequences):
+            seq = f"rep{number:03d}"
+            prefix_path = out / seq / "prefix" / "run.json"
             _runner(common, manifest(number) + [
-                "--fork-from", str(checkpoint), "--fork-condition", condition,
-                "--fork-episodes", str(args.fork_episodes), "--run-path", str(branch),
+                "--stop-at-onset", "--latest-onset-episode", str(args.latest_onset_episode),
+                "--run-path", str(prefix_path),
                 "--max-spend-usd", f"{_budget_left(out, args.max_spend_usd):.6f}",
             ])
-            record = _load(branch) or {}
-            (out / seq / condition / "meta.json").write_text(json.dumps({
+            prefix = _load(prefix_path) or {}
+            turnover = prefix.get("turnover") or {}
+            if turnover.get("stopped_reason") != "onset":
+                print(f"{seq}: {turnover.get('stopped_reason') or 'unfinished'}; no branches.")
+                continue
+
+            # Save the checkpoint once; both branches read this exact file.
+            checkpoint = out / seq / "checkpoint" / "run.json"
+            if not checkpoint.exists():
+                checkpoint.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(prefix_path, checkpoint)
+            onset = (_load(checkpoint)["turnover"] or {})["onset"]
+            (out / seq / "checkpoint" / "meta.json").write_text(json.dumps({
                 "sequence_id": seq,
-                "condition": condition,
                 "onset_episode": onset["episode"],
                 "raw_log_chars": {s: onset["raw_log"][s]["raw_log_chars"] for s in AGENTS},
-                "checkpoint_id": _sha256(checkpoint),
-                "next_task_ids": record.get("turnover", {}).get("next_task_ids"),
-                "models": record.get("run_config", {}).get("models"),
-                "llm_request_parameters": record.get("run_config", {}).get("llm_request_parameters"),
-                "run_order": list(order),
+                "raw_log_check": {s: onset["raw_log"][s]["method"] for s in AGENTS},
+                "capacity_chars": onset["capacity_chars"],
+                "checkpoint_sha256": _sha256(checkpoint),
+                "settings": settings,
             }, indent=2))
 
-    usage_log.append({"when": "pilot end", **(openrouter_key_usage() or {"note": "no key"})})
-    usage_path.write_text(json.dumps(usage_log, indent=2))
-    report(out)
+            # Alternate which arm runs first so time-of-day effects do not favour one.
+            order = CONDITIONS if index % 2 == 0 else CONDITIONS[::-1]
+            for condition in order:
+                branch = out / seq / condition / "run.json"
+                _runner(common, manifest(number) + [
+                    "--fork-from", str(checkpoint), "--fork-condition", condition,
+                    "--fork-episodes", str(args.fork_episodes), "--run-path", str(branch),
+                    "--max-spend-usd", f"{_budget_left(out, args.max_spend_usd):.6f}",
+                ])
+                record = _load(branch) or {}
+                (out / seq / condition / "meta.json").write_text(json.dumps({
+                    "sequence_id": seq,
+                    "condition": condition,
+                    "onset_episode": onset["episode"],
+                    "raw_log_chars": {s: onset["raw_log"][s]["raw_log_chars"] for s in AGENTS},
+                    "checkpoint_id": _sha256(checkpoint),
+                    "next_task_ids": record.get("turnover", {}).get("next_task_ids"),
+                    "models": record.get("run_config", {}).get("models"),
+                    "llm_request_parameters": record.get("run_config", {}).get("llm_request_parameters"),
+                    "run_order": list(order),
+                }, indent=2))
+    finally:
+        usage_log.append({"when": "pilot end", **(openrouter_key_usage() or {"note": "no key"})})
+        usage_path.write_text(json.dumps(usage_log, indent=2))
+        report(out)
 
 
 # ---------------------------------------------------------------- report
@@ -559,6 +566,160 @@ def report(out: Path) -> None:
     print(f"Wrote {out / 'results.csv'} and {out / 'report.md'}")
 
 
+BASELINE_MANIFEST_RE = re.compile(r"rep(\d+)_sampled_manifest\.json$")
+
+
+def _common_from_settings(settings: dict[str, Any]) -> list[str]:
+    common = [
+        "--alice-model", settings["model"], "--bob-model", settings["model"],
+        "--alice-reasoning-effort", settings["reasoning_effort"],
+        "--bob-reasoning-effort", settings["reasoning_effort"],
+        "--no-preflight", "--quiet",
+    ]
+    for agent_id in AGENTS:
+        if settings.get("temperature") is not None:
+            common += [f"--{agent_id}-temperature", str(settings["temperature"])]
+        if settings.get("max_output_tokens") is not None:
+            common += [f"--{agent_id}-max-output-tokens", str(settings["max_output_tokens"])]
+    return common
+
+
+def from_baseline(args: argparse.Namespace) -> None:
+    """Turn finished baseline trajectories into turnover checkpoints, then run fresh Bob.
+
+    A baseline trajectory (``python -m experiments --config ...``) already plays all
+    ten episodes with the same Alice and Bob. Cut at its first eligible onset it is the
+    checkpoint; its next ``--fork-episodes`` episodes are a control-arm sample from that
+    same state (same tasks, same memory), so control costs nothing extra. Only the
+    replacement arm (and any ablation, via ``ablate``) is paid for.
+    """
+    from dotenv import load_dotenv
+
+    load_dotenv(Path.cwd() / ".env")
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    runs = sorted({Path(p) for pattern in args.runs for p in glob.glob(pattern, recursive=True)})
+    if not runs:
+        raise SystemExit(f"No baseline run.json matched {args.runs}")
+    settings = None
+    for run_path in runs:
+        record = json.loads(run_path.read_text())
+        config = record["run_config"]
+        models = config["models"]
+        if models["alice"] != models["bob"] or models["bob"] == "controlled":
+            raise SystemExit(f"{run_path}: turnover needs one live model for both agents")
+        params = config["llm_request_parameters"]["alice"]
+        mine = {
+            "model": models["alice"],
+            "reasoning_effort": params["reasoning_effort"],
+            "temperature": params["temperature"],
+            "max_output_tokens": params["max_output_tokens"],
+            "fork_episodes": args.fork_episodes,
+            "latest_onset_episode": args.latest_onset_episode,
+            "source": "baseline",
+        }
+        if settings is None:
+            settings = mine
+        elif settings != mine:
+            raise SystemExit(f"{run_path} was run with different settings than {runs[0]}")
+        match = BASELINE_MANIFEST_RE.search(config["manifest"])
+        if not match:
+            raise SystemExit(f"{run_path}: cannot read the sequence number from {config['manifest']}")
+        seq_dir = out / f"rep{int(match.group(1)):03d}"
+        results = record.get("results") or []
+        onset = find_first_eligible_onset(results, config["char_limit"], args.latest_onset_episode)
+        if len(results) < config["pair_count"]:
+            onset = {"status": "unfinished", "screened_episodes": len(results)}
+        stopped = onset["status"] if onset["status"] in ("onset", "no_eligible_onset") else "unfinished"
+        prefix_results = results[: onset["episode"]] if onset["status"] == "onset" else results
+        prefix = {**record, "results": prefix_results,
+                  "turnover": {"stopped_reason": stopped, "onset": onset, "source": str(run_path)}}
+        (seq_dir / "prefix").mkdir(parents=True, exist_ok=True)
+        (seq_dir / "prefix" / "run.json").write_text(json.dumps(prefix))
+        if onset["status"] != "onset":
+            print(f"{seq_dir.name}: {onset['status']}; no branches.")
+            continue
+        checkpoint = seq_dir / "checkpoint" / "run.json"
+        if not checkpoint.exists():
+            checkpoint.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(seq_dir / "prefix" / "run.json", checkpoint)
+        sha = _sha256(checkpoint)
+        (seq_dir / "checkpoint" / "meta.json").write_text(json.dumps({
+            "sequence_id": seq_dir.name, "onset_episode": onset["episode"],
+            "raw_log_chars": {a: onset["raw_log"][a]["raw_log_chars"] for a in AGENTS},
+            "capacity_chars": onset["capacity_chars"], "checkpoint_sha256": sha,
+            "source": str(run_path), "settings": mine,
+        }, indent=2))
+        last = min(onset["episode"] + args.fork_episodes, len(results))
+        control = {**record, "results": results[:last], "turnover": {
+            "checkpoint_path": str(checkpoint.resolve()), "checkpoint_sha256": sha,
+            "condition": "control", "ablation": "none", "fork_after_episode": onset["episode"],
+            "last_episode": last, "source": f"baseline continuation of {run_path}",
+            "next_task_ids": [e.get("task_ids") for e in results[onset["episode"]:last]],
+        }}
+        (seq_dir / "control").mkdir(parents=True, exist_ok=True)
+        (seq_dir / "control" / "run.json").write_text(json.dumps(control))
+    old = _load(out / "settings.json")
+    settings = {**settings, "max_spend_usd": args.max_spend_usd}
+    if old and {**old, "max_spend_usd": 0} != {**settings, "max_spend_usd": 0}:
+        raise SystemExit(f"{out} was started with different settings: {old}")
+    (out / "settings.json").write_text(json.dumps(settings, indent=2))
+    if args.no_replacement:
+        return
+    common = _common_from_settings(settings)
+    try:
+        for checkpoint in sorted(out.glob("rep*/checkpoint/run.json")):
+            seq_dir = checkpoint.parent.parent
+            _runner(common, [
+                "--manifest", _load(checkpoint)["run_config"]["manifest"],
+                "--fork-from", str(checkpoint), "--fork-condition", "replacement",
+                "--fork-episodes", str(args.fork_episodes),
+                "--run-path", str(seq_dir / "replacement" / "run.json"),
+                "--max-spend-usd", f"{_budget_left(out, args.max_spend_usd):.6f}",
+            ])
+    finally:
+        report(out)
+
+
+def ablate(args: argparse.Namespace) -> None:
+    """Run ``replacement-<ablation>`` from every saved checkpoint in ``--out``.
+
+    Uses the pilot's saved settings so the only difference from the replacement arm
+    is the ablation. Shares the pilot's budget (spend is counted over the whole folder).
+    """
+    from dotenv import load_dotenv
+
+    load_dotenv(Path.cwd() / ".env")
+    out = Path(args.out)
+    settings = _load(out / "settings.json")
+    if not settings:
+        raise SystemExit(f"{out} has no settings.json; run the pilot first.")
+    common = _common_from_settings(settings)
+    usage_path = out / "openrouter_key_usage.json"
+    usage_log = _load(usage_path) or []
+    usage_log.append({"when": f"ablate {args.ablation} start", **(openrouter_key_usage() or {"note": "no key"})})
+    usage_path.write_text(json.dumps(usage_log, indent=2))
+    arm = f"replacement-{args.ablation}"
+    wanted = set(args.sequences) if args.sequences else None
+    try:
+        for checkpoint in sorted(out.glob("rep*/checkpoint/run.json")):
+            seq_dir = checkpoint.parent.parent
+            number = int(seq_dir.name[3:])
+            if wanted is not None and number not in wanted:
+                continue
+            _runner(common, [
+                "--manifest", _load(checkpoint)["run_config"]["manifest"],
+                "--fork-from", str(checkpoint), "--fork-condition", "replacement",
+                "--fork-ablation", args.ablation,
+                "--fork-episodes", str(settings["fork_episodes"]),
+                "--run-path", str(seq_dir / arm / "run.json"),
+                "--max-spend-usd", f"{_budget_left(out, args.max_spend_usd):.6f}",
+            ])
+    finally:
+        usage_log.append({"when": f"ablate {args.ablation} end", **(openrouter_key_usage() or {"note": "no key"})})
+        usage_path.write_text(json.dumps(usage_log, indent=2))
+
+
 # ---------------------------------------------------------------- command line
 
 
@@ -576,12 +737,29 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--max-spend-usd", type=float, required=True, help="Whole-experiment spend stop.")
     p.add_argument("--check-tools", action="store_true", help="Run one real episode first to test tool calls.")
     p.add_argument("--out", default="results/turnover")
+    b = sub.add_parser("from-baseline", help="baseline runs -> checkpoints + control; run replacement")
+    b.add_argument("--runs", nargs="+", required=True, help="Glob(s) of baseline run.json files")
+    b.add_argument("--fork-episodes", type=int, default=3)
+    b.add_argument("--latest-onset-episode", type=int, default=7)
+    b.add_argument("--max-spend-usd", type=float, required=True, help="Whole-folder spend stop.")
+    b.add_argument("--no-replacement", action="store_true", help="Only build checkpoints and control.")
+    b.add_argument("--out", default="results/turnover")
+    a = sub.add_parser("ablate", help="replacement + one post-fork change, from saved checkpoints")
+    a.add_argument("--ablation", choices=ABLATIONS, required=True)
+    a.add_argument("--sequences", default="", help="Sequence numbers (default: every checkpoint)")
+    a.add_argument("--max-spend-usd", type=float, required=True, help="Whole-folder spend stop.")
+    a.add_argument("--out", default="results/turnover")
     r = sub.add_parser("report", help="Rebuild results.csv and report.md from saved files")
     r.add_argument("--in", dest="out", default="results/turnover")
     args = parser.parse_args(argv)
     if args.command == "pilot":
         args.sequences = [int(x) for x in args.sequences.split(",") if x.strip()]
         pilot(args)
+    elif args.command == "from-baseline":
+        from_baseline(args)
+    elif args.command == "ablate":
+        args.sequences = [int(x) for x in args.sequences.split(",") if x.strip()]
+        ablate(args)
     else:
         report(Path(args.out))
 

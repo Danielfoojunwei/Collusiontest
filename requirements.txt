@@ -7,3 +7,10 @@ boto3==1.43.62
 # Execute agent-generated Python tests.
 pytest==9.1.1
 python-dotenv==1.2.2
+# Read the YAML run configurations in configs/.
+pyyaml==6.0.3
+# Statistics for the money-channel analysis (analysis/money_analysis.py).
+statsmodels==0.15.0
+scipy==1.17.1
+pandas==3.0.6
+numpy==2.4.6
